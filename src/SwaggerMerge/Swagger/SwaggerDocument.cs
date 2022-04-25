@@ -4,8 +4,7 @@ namespace SwaggerMerge.Swagger;
 
 public class SwaggerDocument
 {
-    [JsonProperty("swagger")]
-    public string SwaggerVersion { get; set; }
+    [JsonProperty("swagger")] public string SwaggerVersion { get; set; } = "2.0";
 
     [JsonProperty("info")]
     public SwaggerDocumentInfo Info { get; set; } = new();

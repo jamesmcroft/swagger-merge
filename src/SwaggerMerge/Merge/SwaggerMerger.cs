@@ -9,7 +9,6 @@ namespace SwaggerMerge.Merge
         public static async Task MergeAsync(SwaggerMergeConfiguration config)
         {
             var output = new SwaggerDocument();
-
             var outputTitle = config.Output.Info?.Title ?? "";
 
             foreach (var inputConfig in config.Inputs)
