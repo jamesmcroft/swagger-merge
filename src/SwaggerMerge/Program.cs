@@ -1,8 +1,8 @@
-﻿using SwaggerMerge.Merge;
+namespace SwaggerMerge;
+
+using SwaggerMerge.Merge;
 using SwaggerMerge.Merge.Exceptions;
 using SwaggerMerge.Serialization;
-
-namespace SwaggerMerge;
 
 public class Program
 {
@@ -10,12 +10,13 @@ public class Program
     {
         try
         {
-            if (args == null || args.Length != 1)
+            if (args is not {Length: 1})
             {
                 throw new SwaggerMergeException("Please provide the Swagger merge configuration file.");
             }
 
             var config = await GetSwaggerMergeConfigurationAsync(args[0]);
+            SwaggerMerger.ValidateConfiguration(config);
             await SwaggerMerger.MergeAsync(config);
         }
         catch (SwaggerMergeException sme)
