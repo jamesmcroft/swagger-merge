@@ -8,6 +8,14 @@ The Swagger v2 merge CLI tool allows you to process the merging of multiple Swag
 
 ## Getting started
 
+### Install the tool
+
+```bash
+dotnet tool install -g SwaggerMerge
+```
+
+### Configure your Swagger document merge
+
 To use the CLI tool, you will need access to all of your Swagger v2 JSON input files, and you will need to create a configuration JSON file that will be used by the CLI tool to determine how to merge the input files together.
 
 Here's an example of the format for this configuration file.
@@ -56,10 +64,12 @@ The configuration file is made up of several options that allow you to customize
     - `title` - **Optional**. A string to use as the title of the output file.
     - `version` - **Optional**. A string to use as the version of the output file.
 
+### Run the merge tool
+
 Once you have your configuration file, it is simply a case of running CLI and passing the file as the first argument to the tool. 
 
 ```bash
-SwaggerMerge config.json
+swagger-merge config.json
 ```
 
 This will merge all of the input files into a single output file at the configured path. And that's it!
