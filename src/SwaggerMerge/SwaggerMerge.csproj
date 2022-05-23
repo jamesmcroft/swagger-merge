@@ -1,10 +1,15 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
     <OutputType>Exe</OutputType>
     <TargetFramework>net6.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
+    <PackAsTool>true</PackAsTool>
+    <ToolCommandName>swagger-merge</ToolCommandName>
+    <Product>Swagger v2 Merge Tool</Product>
+    <PackageTags>Swagger Merge API Documentation OpenAPI</PackageTags>
   </PropertyGroup>
 
   <ItemGroup>
