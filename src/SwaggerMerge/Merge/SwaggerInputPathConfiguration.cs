@@ -1,4 +1,4 @@
-﻿namespace SwaggerMerge.Merge;
+namespace SwaggerMerge.Merge;
 
 /// <summary>
 /// Defines the configuration for modifying a Swagger document's paths.
@@ -14,4 +14,9 @@ public class SwaggerInputPathConfiguration
     /// Gets or sets the value to prepend to the start of paths.
     /// </summary>
     public string? Prepend { get; set; }
+
+    /// <summary>
+    /// Gets or sets the exclusions to remove from the output for path implementations.
+    /// </summary>
+    public SwaggerInputPathExclusionConfiguration? Exclusions { get; set; }
 }
