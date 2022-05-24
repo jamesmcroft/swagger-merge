@@ -3,6 +3,7 @@
 [![GitHub release](https://img.shields.io/github/release/jamesmcroft/swagger-merge.svg)](https://github.com/jamesmcroft/swagger-merge/releases)
 [![Build status](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci.yml)
 [![Twitter Followers](https://img.shields.io/twitter/follow/jamesmcroft?label=follow%20%40jamesmcroft&style=flat)](https://twitter.com/jamesmcroft)
+[![.NET Tool](https://img.shields.io/nuget/v/SwaggerMerge)](https://www.nuget.org/packages/SwaggerMerge/)
 
 The Swagger v2 merge CLI tool allows you to process the merging of multiple Swagger v2 JSON files into a single Swagger v2 JSON file. This is useful for bringing together the API layer of a distributed service architecture where you wish to expose the APIs via a single API gateway.
 
