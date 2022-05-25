@@ -31,7 +31,7 @@ Here's an example of the format for this configuration file.
           "file": "./users.swagger.json",
           "path": {
               "prepend": "/api/users",
-              "stripStart": "/foo"
+              "stripStart": "/foo",
           },
           "info": {
               "append": true,
@@ -44,7 +44,24 @@ Here's an example of the format for this configuration file.
       "info": {
           "title": "Services",
           "version": "1.0"
-      }
+      },
+      "basePath": "/",
+      "host": "localhost:8080",
+      "schemes": [
+          "https"
+      ],
+      "securityDefinitions": {
+          "ApiKeyAuth": {
+              "type": "apiKey",
+              "in": "header",
+              "name": "Authorization"
+          }
+      },
+      "security": [
+          {
+              "ApiKeyAuth": []
+          }
+      ]  
   }
 }
 ```
@@ -64,6 +81,14 @@ The configuration file is made up of several options that allow you to customize
   - `info` - **Optional**. A configuration object for the info section with the following properties:
     - `title` - **Optional**. A string to use as the title of the output file.
     - `version` - **Optional**. A string to use as the version of the output file.
+  - `basePath` - **Optional**. A string to use as the base path of the output file.
+  - `host` - **Optional**. A string to use as the host of the output file.
+  - `schemes` - **Optional**. An array of strings to use as the schemes of the output file.
+  - `securityDefinitions` - **Optional**. A configuration object for the security definitions of the output file with the following properties:
+    - `type` - **Optional**. A string to use as the type of the security definition.
+    - `in` - **Optional**. A string to use as the in of the security definition.
+    - `name` - **Optional**. A string to use as the name of the security definition.
+  - `security` - **Optional**. An array of security requirements to use in the output file.
 
 ### Run the merge tool
 
