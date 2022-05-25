@@ -80,6 +80,45 @@ internal static class SwaggerMerger
         SwaggerInputConfiguration inputConfig,
         SwaggerDocument input)
     {
+        SwaggerDocumentPaths DetermineOutputPaths()
+        {
+            var swaggerDocumentPaths = input.Paths;
+
+            foreach (var (path, pathOperations) in input.Paths)
+            {
+                if (inputConfig.Path is not { OperationExclusions: { } } || !inputConfig.Path.OperationExclusions.Any())
+                {
+                    continue;
+                }
+
+                foreach (var (method, operation) in pathOperations)
+                {
+                    // Remove any paths where the additional properties are included in the exclusions.
+                    foreach (var (_, _) in inputConfig.Path.OperationExclusions.Where(
+                                 pathOperationExclusion => operation.AdditionalProperties != null &&
+                                                           operation.AdditionalProperties.ContainsKey(
+                                                               pathOperationExclusion.Key) &&
+                                                           operation.AdditionalProperties[
+                                                                   pathOperationExclusion.Key]
+                                                               .Equals(pathOperationExclusion.Value)))
+                    {
+                        pathOperations.Remove(method);
+                    }
+                }
+
+                if (!pathOperations.Any())
+                {
+                    swaggerDocumentPaths.Remove(path);
+                }
+                else
+                {
+                    swaggerDocumentPaths[path] = pathOperations;
+                }
+            }
+
+            return swaggerDocumentPaths;
+        }
+
         string PrependOutputPath(string outputPath)
         {
             if (inputConfig.Path?.Prepend != null && !string.IsNullOrWhiteSpace(inputConfig.Path.Prepend))
@@ -100,7 +139,14 @@ internal static class SwaggerMerger
             return outputPath;
         }
 
-        foreach (var path in input.Paths)
+        if (input.Paths == null)
+        {
+            return;
+        }
+
+        var pathsToProcess = DetermineOutputPaths();
+
+        foreach (var path in pathsToProcess)
         {
             var outputPath = path.Key;
 
@@ -112,13 +158,15 @@ internal static class SwaggerMerger
 
     private static void ProcessOutputDefinitions(SwaggerDocument output, SwaggerDocument input)
     {
-        if (input.Definitions != null && output.Definitions != null)
+        if (input.Definitions == null || output.Definitions == null)
         {
-            foreach (var definition in input.Definitions.Where(definition =>
-                         !output.Definitions.ContainsKey(definition.Key)))
-            {
-                output.Definitions.AddOrUpdate(definition.Key, definition.Value);
-            }
+            return;
+        }
+
+        foreach (var definition in input.Definitions.Where(definition =>
+                     !output.Definitions.ContainsKey(definition.Key)))
+        {
+            output.Definitions.AddOrUpdate(definition.Key, definition.Value);
         }
     }
 }

@@ -16,7 +16,7 @@ public class SwaggerInputPathConfiguration
     public string? Prepend { get; set; }
 
     /// <summary>
-    /// Gets or sets the exclusions to remove from the output for path implementations.
+    /// Gets or sets the exclusions for the output for path operation implementations based on a key-value match.
     /// </summary>
-    public SwaggerInputPathExclusionConfiguration? Exclusions { get; set; }
+    public SwaggerInputPathOperationExclusionConfiguration? OperationExclusions { get; set; }
 }
