@@ -10,17 +10,12 @@ public class Program
     {
         try
         {
-            string configFile;
-
             if (args is not { Length: 1 })
             {
-                configFile = @"C:\Users\JamesCroft\Downloads\Veco Power Automate\SwaggerMergeConfig.json";
-                //throw new SwaggerMergeException("Please provide the Swagger merge configuration file.");
+                throw new SwaggerMergeException("Please provide the Swagger merge configuration file.");
             }
-            else
-            {
-                configFile = args[0];
-            }
+
+            var configFile = args[0];
 
             var config = await GetSwaggerMergeConfigurationAsync(configFile);
             SwaggerMerger.ValidateConfiguration(config);
