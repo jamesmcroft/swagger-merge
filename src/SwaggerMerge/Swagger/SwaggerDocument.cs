@@ -318,9 +318,19 @@ public class SwaggerDocumentSchema
     public string? Type { get; set; }
 
     /// <summary>
+    /// Gets or sets the extending format for the <see cref="Type"/>.
+    /// </summary>
+    public string? Format { get; set; }
+
+    /// <summary>
     /// Gets or sets the type of items in the array if the <see cref="Type"/> is <b>array</b>.
     /// </summary>
-    public SwaggerDocumentItems? Items { get; set; }
+    public SwaggerDocumentSchema? Items { get; set; }
+
+    /// <summary>
+    /// Gets or sets the properties of an item.
+    /// </summary>
+    public Dictionary<string, SwaggerDocumentSchema>? Properties { get; set; }
 
     /// <summary>
     /// Gets or sets the additional properties that are not covered by the defined Swagger properties.
@@ -372,7 +382,12 @@ public class SwaggerDocumentParameter
     /// <summary>
     /// Gets or sets the type of items in the array if the <see cref="Type"/> is <b>array</b>.
     /// </summary>
-    public SwaggerDocumentItems? Items { get; set; }
+    public SwaggerDocumentSchema? Items { get; set; }
+
+    /// <summary>
+    /// Gets or sets the properties of an item.
+    /// </summary>
+    public Dictionary<string, SwaggerDocumentSchema>? Properties { get; set; }
 
     /// <summary>
     /// Gets or sets a definition of the parameter structure.
@@ -406,34 +421,12 @@ public class SwaggerDocumentHeader
     /// <summary>
     /// Gets or sets the type of items in the array if the <see cref="Type"/> is <b>array</b>.
     /// </summary>
-    public SwaggerDocumentItems? Items { get; set; }
+    public SwaggerDocumentSchema? Items { get; set; }
 
     /// <summary>
-    /// Gets or sets the additional properties that are not covered by the defined Swagger properties.
+    /// Gets or sets the properties of an item.
     /// </summary>
-    [JsonExtensionData]
-    public Dictionary<string, object>? AdditionalProperties { get; set; }
-}
-
-/// <summary>
-/// Defines the limited subset of JSON schemas item object.
-/// </summary>
-public class SwaggerDocumentItems
-{
-    /// <summary>
-    /// Gets or sets the type of the object.
-    /// </summary>
-    public string? Type { get; set; }
-
-    /// <summary>
-    /// Gets or sets the extending format for the <see cref="Type"/>.
-    /// </summary>
-    public string? Format { get; set; }
-
-    /// <summary>
-    /// Gets or sets the type of items in the array if the <see cref="Type"/> is <b>array</b>.
-    /// </summary>
-    public SwaggerDocumentItems? Items { get; set; }
+    public Dictionary<string, SwaggerDocumentSchema>? Properties { get; set; }
 
     /// <summary>
     /// Gets or sets the additional properties that are not covered by the defined Swagger properties.

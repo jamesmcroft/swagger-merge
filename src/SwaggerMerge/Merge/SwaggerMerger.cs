@@ -9,11 +9,7 @@ internal static class SwaggerMerger
 {
     public static async Task MergeAsync(SwaggerMergeConfiguration config)
     {
-        var output = new SwaggerDocument
-        {
-            Host = config.Output.Host,
-            BasePath = config.Output.BasePath
-        };
+        var output = new SwaggerDocument { Host = config.Output.Host, BasePath = config.Output.BasePath };
 
         var outputTitle = config.Output.Info?.Title ?? string.Empty;
 
@@ -22,12 +18,17 @@ internal static class SwaggerMerger
             var input = await JsonFile.LoadFileAsync<SwaggerDocument>(inputConfig.File);
 
             outputTitle = ProcessOutputTitle(outputTitle, inputConfig, input);
-            ProcessOutputPaths(output, inputConfig, input);
-            ProcessOutputDefinitions(output, input);
+            ProcessInputPaths(output, inputConfig, input);
+            ProcessInputDefinitions(output, input);
         }
+
+        ProcessOutputDefinitions(config.Output, output);
 
         output.Info.Title = outputTitle;
         output.Info.Version = config.Output.Info?.Version ?? "1.0";
+        output.Schemes = config.Output.Schemes ?? new List<string>();
+        output.SecurityDefinitions = config.Output.SecurityDefinitions ?? new SwaggerDocumentSecurityDefinitions();
+        output.Security = config.Output.Security ?? new List<SwaggerDocumentSecurityRequirement>();
 
         await JsonFile.SaveFileAsync(config.Output.File, output);
 
@@ -75,7 +76,7 @@ internal static class SwaggerMerger
         return outputTitle;
     }
 
-    private static void ProcessOutputPaths(
+    private static void ProcessInputPaths(
         SwaggerDocument output,
         SwaggerInputConfiguration inputConfig,
         SwaggerDocument input)
@@ -156,7 +157,9 @@ internal static class SwaggerMerger
         }
     }
 
-    private static void ProcessOutputDefinitions(SwaggerDocument output, SwaggerDocument input)
+    private static void ProcessInputDefinitions(
+        SwaggerDocument output,
+        SwaggerDocument input)
     {
         if (input.Definitions == null || output.Definitions == null)
         {
@@ -167,6 +170,31 @@ internal static class SwaggerMerger
                      !output.Definitions.ContainsKey(definition.Key)))
         {
             output.Definitions.AddOrUpdate(definition.Key, definition.Value);
+        }
+    }
+
+    private static void ProcessOutputDefinitions(
+        SwaggerOutputConfiguration outputConfig,
+        SwaggerDocument output)
+    {
+        if (outputConfig.InlineSchema && output.Definitions != null)
+        {
+            foreach (var definition in output.Definitions)
+            {
+                if (definition.Value.Properties != null)
+                {
+                    foreach (var definitionProp in definition.Value.Properties)
+                    {
+                        if (definitionProp.Value.Reference != null)
+                        {
+                            var expectedReference = output.Definitions.FirstOrDefault(x =>
+                                x.Key.Equals(definitionProp.Value.Reference.Replace("#/definitions/", string.Empty), StringComparison.CurrentCultureIgnoreCase));
+
+
+                        }
+                    }
+                }
+            }
         }
     }
 }
