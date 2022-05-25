@@ -1,4 +1,4 @@
-namespace SwaggerMerge.Merge;
+namespace SwaggerMerge.Merge.Configuration.Output;
 
 using Swagger;
 

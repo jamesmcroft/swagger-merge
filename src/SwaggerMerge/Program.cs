@@ -1,6 +1,7 @@
 namespace SwaggerMerge;
 
 using SwaggerMerge.Merge;
+using SwaggerMerge.Merge.Configuration;
 using SwaggerMerge.Merge.Exceptions;
 using SwaggerMerge.Serialization;
 

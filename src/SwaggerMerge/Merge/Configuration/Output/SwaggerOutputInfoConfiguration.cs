@@ -1,4 +1,4 @@
-namespace SwaggerMerge.Merge;
+namespace SwaggerMerge.Merge.Configuration.Output;
 
 /// <summary>
 /// Defines the configuration for modifying the output Swagger document's description.

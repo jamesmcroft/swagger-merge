@@ -1,4 +1,4 @@
-namespace SwaggerMerge.Merge;
+namespace SwaggerMerge.Merge.Configuration.Input;
 
 /// <summary>
 /// Defines the configuration for defining path operation exclusions based on a defined property match.
