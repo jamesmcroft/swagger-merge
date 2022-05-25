@@ -38,11 +38,6 @@ public class SwaggerOutputConfiguration
     public List<SwaggerDocumentSecurityRequirement>? Security { get; set; } = new();
 
     /// <summary>
-    /// Gets or sets a value indicating whether the schema should be inline rather than by definition reference.
-    /// </summary>
-    public bool InlineSchema { get; set; } = false;
-
-    /// <summary>
     /// Gets or sets the configuration for the document's description.
     /// </summary>
     public SwaggerOutputInfoConfiguration? Info { get; set; }

@@ -9,7 +9,7 @@ internal static class SwaggerMerger
 {
     public static async Task MergeAsync(SwaggerMergeConfiguration config)
     {
-        var output = new SwaggerDocument { Host = config.Output.Host, BasePath = config.Output.BasePath };
+        var output = new SwaggerDocument {Host = config.Output.Host, BasePath = config.Output.BasePath};
 
         var outputTitle = config.Output.Info?.Title ?? string.Empty;
 
@@ -22,7 +22,13 @@ internal static class SwaggerMerger
             ProcessInputDefinitions(output, input);
         }
 
-        ProcessOutputDefinitions(config.Output, output);
+        if (config.Inputs.Any(x => x.Path is {OperationExclusions: { }} && x.Path.OperationExclusions.Any()))
+        {
+            if (output.Definitions != null)
+            {
+                output.Definitions = RemoveUnusedDefinitions(output);
+            }
+        }
 
         output.Info.Title = outputTitle;
         output.Info.Version = config.Output.Info?.Version ?? "1.0";
@@ -58,7 +64,7 @@ internal static class SwaggerMerger
         SwaggerInputConfiguration inputConfig,
         SwaggerDocument input)
     {
-        if (inputConfig.Info is not { Append: true })
+        if (inputConfig.Info is not {Append: true})
         {
             return outputTitle;
         }
@@ -87,7 +93,7 @@ internal static class SwaggerMerger
 
             foreach (var (path, pathOperations) in input.Paths)
             {
-                if (inputConfig.Path is not { OperationExclusions: { } } || !inputConfig.Path.OperationExclusions.Any())
+                if (inputConfig.Path is not {OperationExclusions: { }} || !inputConfig.Path.OperationExclusions.Any())
                 {
                     continue;
                 }
@@ -173,28 +179,195 @@ internal static class SwaggerMerger
         }
     }
 
-    private static void ProcessOutputDefinitions(
-        SwaggerOutputConfiguration outputConfig,
-        SwaggerDocument output)
+    private static SwaggerDocumentDefinitions RemoveUnusedDefinitions(SwaggerDocument document)
     {
-        if (outputConfig.InlineSchema && output.Definitions != null)
+        void ProcessDefinitionPropertyItemReferences(KeyValuePair<string, SwaggerDocumentSchema> property,
+            SwaggerDocumentDefinitions allDefinitions)
         {
-            foreach (var definition in output.Definitions)
+            if (property.Value.Items?.Reference == null)
             {
-                if (definition.Value.Properties != null)
-                {
-                    foreach (var definitionProp in definition.Value.Properties)
-                    {
-                        if (definitionProp.Value.Reference != null)
-                        {
-                            var expectedReference = output.Definitions.FirstOrDefault(x =>
-                                x.Key.Equals(definitionProp.Value.Reference.Replace("#/definitions/", string.Empty), StringComparison.CurrentCultureIgnoreCase));
+                return;
+            }
 
+            var expectedDefinition = GetDefinitionByReference(document.Definitions, property.Value.Items.Reference);
 
-                        }
-                    }
-                }
+            if (string.IsNullOrWhiteSpace(expectedDefinition.Key) || allDefinitions.ContainsKey(expectedDefinition.Key))
+            {
+                return;
+            }
+
+            allDefinitions.AddOrUpdate(expectedDefinition.Key, expectedDefinition.Value);
+            ProcessReferenceDefinitionReferences(expectedDefinition, allDefinitions);
+        }
+
+        void ProcessDefinitionPropertyReferences(KeyValuePair<string, SwaggerDocumentSchema> property,
+            SwaggerDocumentDefinitions allDefinitions)
+        {
+            if (property.Value.Reference == null)
+            {
+                return;
+            }
+
+            var expectedDefinition = GetDefinitionByReference(document.Definitions, property.Value.Reference);
+
+            if (string.IsNullOrWhiteSpace(expectedDefinition.Key) || allDefinitions.ContainsKey(expectedDefinition.Key))
+            {
+                return;
+            }
+
+            allDefinitions.AddOrUpdate(expectedDefinition.Key, expectedDefinition.Value);
+            ProcessReferenceDefinitionReferences(expectedDefinition, allDefinitions);
+        }
+
+        void ProcessReferenceDefinitionReferences(
+            KeyValuePair<string, SwaggerDocumentSchema> definition,
+            SwaggerDocumentDefinitions allDefinitions)
+        {
+            if (definition.Value.Properties == null)
+            {
+                return;
+            }
+
+            foreach (var property in definition.Value.Properties)
+            {
+                ProcessDefinitionPropertyReferences(property, allDefinitions);
+
+                ProcessDefinitionPropertyItemReferences(property, allDefinitions);
             }
         }
+
+        void ProcessResponseSchemaItemReferences(
+            SwaggerDocumentResponse response,
+            SwaggerDocumentDefinitions allDefinitions)
+        {
+            if (response.Schema is not {Items.Reference: { }})
+            {
+                return;
+            }
+
+            var expectedDefinition =
+                GetDefinitionByReference(document.Definitions, response.Schema?.Reference);
+
+            if (string.IsNullOrWhiteSpace(expectedDefinition.Key) || allDefinitions.ContainsKey(expectedDefinition.Key))
+            {
+                return;
+            }
+
+            allDefinitions.AddOrUpdate(expectedDefinition.Key, expectedDefinition.Value);
+            ProcessReferenceDefinitionReferences(expectedDefinition, allDefinitions);
+        }
+
+        void ProcessResponseSchemaReferences(
+            SwaggerDocumentResponse response,
+            SwaggerDocumentDefinitions allDefinitions)
+        {
+            if (response.Schema is not {Reference: { }})
+            {
+                return;
+            }
+
+            var expectedDefinition =
+                GetDefinitionByReference(document.Definitions, response.Schema?.Reference);
+
+            if (string.IsNullOrWhiteSpace(expectedDefinition.Key) || allDefinitions.ContainsKey(expectedDefinition.Key))
+            {
+                return;
+            }
+
+            allDefinitions.AddOrUpdate(expectedDefinition.Key, expectedDefinition.Value);
+            ProcessReferenceDefinitionReferences(expectedDefinition, allDefinitions);
+        }
+
+        void ProcessParameterSchemaItemReferences(
+            SwaggerDocumentOperation operation,
+            SwaggerDocumentDefinitions allDefinitions)
+        {
+            if (operation.Parameters == null)
+            {
+                return;
+            }
+
+            foreach (var referenceParameter in operation.Parameters.Where(x =>
+                         x.Schema is {Items.Reference: { }}))
+            {
+                var expectedDefinition =
+                    GetDefinitionByReference(document.Definitions, referenceParameter.Schema?.Items?.Reference);
+
+                if (string.IsNullOrWhiteSpace(expectedDefinition.Key) ||
+                    allDefinitions.ContainsKey(expectedDefinition.Key))
+                {
+                    continue;
+                }
+
+                allDefinitions.AddOrUpdate(expectedDefinition.Key, expectedDefinition.Value);
+                ProcessReferenceDefinitionReferences(expectedDefinition, allDefinitions);
+            }
+        }
+
+        void ProcessParameterSchemaReferences(
+            SwaggerDocumentOperation operation,
+            SwaggerDocumentDefinitions allDefinitions)
+        {
+            if (operation.Parameters == null)
+            {
+                return;
+            }
+
+            foreach (SwaggerDocumentParameter referenceParameter in operation.Parameters.Where(x =>
+                         x.Schema is {Reference: { }}))
+            {
+                var expectedDefinition =
+                    GetDefinitionByReference(document.Definitions, referenceParameter.Schema?.Reference);
+
+                if (string.IsNullOrWhiteSpace(expectedDefinition.Key) ||
+                    allDefinitions.ContainsKey(expectedDefinition.Key))
+                {
+                    continue;
+                }
+
+                allDefinitions.AddOrUpdate(expectedDefinition.Key, expectedDefinition.Value);
+                ProcessReferenceDefinitionReferences(expectedDefinition, allDefinitions);
+            }
+        }
+
+        SwaggerDocumentDefinitions definitions = new SwaggerDocumentDefinitions();
+
+        if (document.Definitions == null || document.Paths == null)
+        {
+            return definitions;
+        }
+
+        foreach (var operation in document.Paths.SelectMany(path => path.Value.Select(method => method.Value)))
+        {
+            if (operation.Parameters != null)
+            {
+                ProcessParameterSchemaReferences(operation, definitions);
+                ProcessParameterSchemaItemReferences(operation, definitions);
+            }
+
+            if (operation.Responses == null)
+            {
+                continue;
+            }
+
+            foreach (var response in operation.Responses.Select(operationResponse => operationResponse.Value))
+            {
+                ProcessResponseSchemaReferences(response, definitions);
+                ProcessResponseSchemaItemReferences(response, definitions);
+            }
+        }
+
+        return definitions;
+    }
+
+    private static KeyValuePair<string, SwaggerDocumentSchema> GetDefinitionByReference(
+        SwaggerDocumentDefinitions definitions,
+        string? reference)
+    {
+        var expectedDefinition = definitions.FirstOrDefault(x =>
+            x.Key.Equals(
+                reference?.Replace("#/definitions/", string.Empty),
+                StringComparison.CurrentCultureIgnoreCase));
+        return expectedDefinition;
     }
 }
