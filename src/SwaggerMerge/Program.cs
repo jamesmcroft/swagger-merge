@@ -1,6 +1,7 @@
 namespace SwaggerMerge;
 
 using SwaggerMerge.Merge;
+using SwaggerMerge.Merge.Configuration;
 using SwaggerMerge.Merge.Exceptions;
 using SwaggerMerge.Serialization;
 
@@ -10,12 +11,14 @@ public class Program
     {
         try
         {
-            if (args is not {Length: 1})
+            if (args is not { Length: 1 })
             {
                 throw new SwaggerMergeException("Please provide the Swagger merge configuration file.");
             }
 
-            var config = await GetSwaggerMergeConfigurationAsync(args[0]);
+            var configFile = args[0];
+
+            var config = await GetSwaggerMergeConfigurationAsync(configFile);
             SwaggerMerger.ValidateConfiguration(config);
             await SwaggerMerger.MergeAsync(config);
         }

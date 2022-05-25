@@ -1,4 +1,4 @@
-namespace SwaggerMerge.Merge;
+namespace SwaggerMerge.Merge.Configuration.Input;
 
 /// <summary>
 /// Defines the configuration for a Swagger document input.

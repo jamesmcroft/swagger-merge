@@ -1,4 +1,7 @@
-namespace SwaggerMerge.Merge;
+namespace SwaggerMerge.Merge.Configuration;
+
+using SwaggerMerge.Merge.Configuration.Input;
+using SwaggerMerge.Merge.Configuration.Output;
 
 /// <summary>
 /// Defines the configuration for merging Swagger documents.
