@@ -15,6 +15,12 @@ The Swagger v2 merge CLI tool allows you to process the merging of multiple Swag
 dotnet tool install -g SwaggerMerge
 ```
 
+**Or update an existing install**
+
+```bash
+dotnet tool update -g SwaggerMerge
+```
+
 ### Configure your Swagger document merge
 
 To use the CLI tool, you will need access to all of your Swagger v2 JSON input files, and you will need to create a configuration JSON file that will be used by the CLI tool to determine how to merge the input files together.
