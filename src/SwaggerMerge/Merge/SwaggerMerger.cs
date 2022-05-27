@@ -28,8 +28,13 @@ internal static partial class SwaggerMerger
         Console.WriteLine($"Merged {config.Inputs.Count()} files into '{config.Output.File}'");
     }
 
-    private static void FinalizeOutput(SwaggerDocument output, string outputTitle, SwaggerMergeConfiguration config)
+    private static void FinalizeOutput(SwaggerDocument? output, string outputTitle, SwaggerMergeConfiguration config)
     {
+        if (output == null)
+        {
+            return;
+        }
+
         // Where exclusions have been specified, remove any definitions from the output where they are no longer valid
         if (config.Inputs.Any(x => x.Path is { OperationExclusions: { } } && x.Path.OperationExclusions.Any()))
         {

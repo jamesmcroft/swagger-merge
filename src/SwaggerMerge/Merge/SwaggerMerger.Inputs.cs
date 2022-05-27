@@ -7,7 +7,7 @@ using SwaggerMerge.Merge.Configuration.Input;
 internal static partial class SwaggerMerger
 {
     private static void UpdateOutputPathsFromInput(
-        SwaggerDocument output,
+        SwaggerDocument? output,
         SwaggerInputConfiguration inputConfig,
         SwaggerDocument input)
     {
@@ -28,7 +28,7 @@ internal static partial class SwaggerMerger
 
             outputPath = StripStartFromPath(outputPath, inputConfig);
             outputPath = PrependToPath(outputPath, inputConfig);
-            output.Paths.AddOrUpdate(outputPath, path.Value);
+            output?.Paths.AddOrUpdate(outputPath, path.Value);
         }
     }
 
@@ -56,10 +56,10 @@ internal static partial class SwaggerMerger
     }
 
     private static void UpdateOutputDefinitionsFromInput(
-        SwaggerDocument output,
+        SwaggerDocument? output,
         SwaggerDocument input)
     {
-        if (input.Definitions == null || output.Definitions == null)
+        if (input.Definitions == null || output?.Definitions == null)
         {
             return;
         }
@@ -91,12 +91,9 @@ internal static partial class SwaggerMerger
             {
                 // Remove any paths where the additional properties are included in the exclusions.
                 foreach (var (_, _) in inputConfig.Path.OperationExclusions.Where(
-                             pathOperationExclusion => operation.AdditionalProperties != null &&
-                                                       operation.AdditionalProperties.ContainsKey(
-                                                           pathOperationExclusion.Key) &&
-                                                       operation.AdditionalProperties[
-                                                               pathOperationExclusion.Key]
-                                                           .Equals(pathOperationExclusion.Value)))
+                             pathOperationExclusion => operation.JTokenProperties != null &&
+                                                       operation.JTokenProperties.ContainsKey(pathOperationExclusion.Key) &&
+                                                       operation.JTokenProperties[pathOperationExclusion.Key].Equals(pathOperationExclusion.Value)))
                 {
                     pathOperations.Remove(method);
                 }
