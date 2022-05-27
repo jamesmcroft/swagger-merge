@@ -1,7 +1,7 @@
 namespace SwaggerMerge;
 
+using Merge.Configuration;
 using SwaggerMerge.Merge;
-using SwaggerMerge.Merge.Configuration;
 using SwaggerMerge.Merge.Exceptions;
 using SwaggerMerge.Serialization;
 
@@ -24,7 +24,7 @@ public class Program
         }
         catch (SwaggerMergeException sme)
         {
-            Console.WriteLine(sme.Message);
+            Console.WriteLine(sme);
         }
         catch (Exception e)
         {
@@ -41,9 +41,9 @@ public class Program
             config = await JsonFile.LoadFileAsync<SwaggerMergeConfiguration>(configFilePath);
             Directory.SetCurrentDirectory(Path.GetDirectoryName(configFilePath));
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            throw new SwaggerMergeException("The provided Swagger merge configuration file is not valid.");
+            throw new SwaggerMergeException("The provided Swagger merge configuration file is not valid.", ex);
         }
 
         return config;
