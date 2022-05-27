@@ -24,7 +24,7 @@ public class Program
         }
         catch (SwaggerMergeException sme)
         {
-            Console.WriteLine(sme);
+            Console.WriteLine(sme.Message);
         }
         catch (Exception e)
         {
