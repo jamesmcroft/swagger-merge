@@ -1,10 +1,13 @@
-namespace SwaggerMerge.Merge;
+namespace SwaggerMerge;
 
+using Configuration.Input;
+using Document;
 using MADE.Collections;
-using Swagger;
-using SwaggerMerge.Merge.Configuration.Input;
 
-internal static partial class SwaggerMerger
+/// <summary>
+/// Defines the handler logic for merging Swagger document inputs.
+/// </summary>
+public partial class SwaggerMergeHandler
 {
     private static void UpdateOutputPathsFromInput(
         SwaggerDocument? output,
@@ -71,7 +74,9 @@ internal static partial class SwaggerMerger
         }
     }
 
-    private static SwaggerDocumentPaths? DetermineOutputPathsFromInput(SwaggerDocument input, SwaggerInputConfiguration inputConfig)
+    private static SwaggerDocumentPaths? DetermineOutputPathsFromInput(
+        SwaggerDocument input,
+        SwaggerInputConfiguration inputConfig)
     {
         if (input.Paths == null)
         {
@@ -80,23 +85,27 @@ internal static partial class SwaggerMerger
 
         var swaggerDocumentPaths = input.Paths;
 
-        foreach (var (path, pathOperations) in input.Paths)
+        foreach (var inputPath in input.Paths)
         {
+            var path = inputPath.Key;
+            var pathOperations = inputPath.Value;
+
             if (inputConfig.Path is not { OperationExclusions: { } } || !inputConfig.Path.OperationExclusions.Any())
             {
                 continue;
             }
 
-            foreach (var (method, operation) in pathOperations)
+            foreach (var method in from pathOperation in pathOperations
+                     let method = pathOperation.Key
+                     let operation = pathOperation.Value
+                     from exclusion in inputConfig.Path.OperationExclusions.Where(
+                         pathOperationExclusion => operation.JTokenProperties != null &&
+                                                   operation.JTokenProperties.ContainsKey(pathOperationExclusion.Key) &&
+                                                   operation.JTokenProperties[pathOperationExclusion.Key]
+                                                       .Equals(pathOperationExclusion.Value))
+                     select method)
             {
-                // Remove any paths where the additional properties are included in the exclusions.
-                foreach (var (_, _) in inputConfig.Path.OperationExclusions.Where(
-                             pathOperationExclusion => operation.JTokenProperties != null &&
-                                                       operation.JTokenProperties.ContainsKey(pathOperationExclusion.Key) &&
-                                                       operation.JTokenProperties[pathOperationExclusion.Key].Equals(pathOperationExclusion.Value)))
-                {
-                    pathOperations.Remove(method);
-                }
+                pathOperations.Remove(method);
             }
 
             if (!pathOperations.Any())

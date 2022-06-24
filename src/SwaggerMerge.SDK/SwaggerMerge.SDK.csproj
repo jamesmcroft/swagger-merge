@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <OutputType>Library</OutputType>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <Product>Swagger Merge SDK</Product>
+    <Description>
+      Swagger Merge SDK to process the merging of multiple Swagger files into a single Swagger file.
+      This is useful for bringing together the API layer of a distributed service architecture where you wish to expose the APIs via a single API gateway.
+    </Description>
+    <PackageTags>Swagger Merge API Documentation OpenAPI SDK</PackageTags>
+    <RootNamespace>SwaggerMerge</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="MADE.Collections" Version="1.6.0" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.1" />
+  </ItemGroup>
+
+</Project>

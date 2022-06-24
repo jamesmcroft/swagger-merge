@@ -1,12 +1,12 @@
-namespace SwaggerMerge.Merge.Configuration;
+namespace SwaggerMerge.Infrastructure.Configuration.Merge;
 
-using SwaggerMerge.Merge.Configuration.Input;
-using SwaggerMerge.Merge.Configuration.Output;
+using Input;
+using Output;
 
 /// <summary>
 /// Defines the configuration for merging Swagger documents.
 /// </summary>
-public class SwaggerMergeConfiguration
+public class SwaggerMergeConfigurationFile
 {
     /// <summary>
     /// Gets or sets the inputs for merging.

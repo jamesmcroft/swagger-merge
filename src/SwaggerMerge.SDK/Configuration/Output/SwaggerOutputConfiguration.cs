@@ -1,17 +1,12 @@
-namespace SwaggerMerge.Merge.Configuration.Output;
+namespace SwaggerMerge.Configuration.Output;
 
-using Swagger;
+using Document;
 
 /// <summary>
-/// Defines the configuration for a Swagger document output.
+/// Defines the configuration of a Swagger document output.
 /// </summary>
 public class SwaggerOutputConfiguration
 {
-    /// <summary>
-    /// Gets or sets the file path of the output merged Swagger document.
-    /// </summary>
-    public string File { get; set; } = string.Empty;
-
     /// <summary>
     /// Gets or sets the host (name or IP) service the API for the output.
     /// </summary>

@@ -1,51 +1,47 @@
 namespace SwaggerMerge;
 
-using Merge.Configuration;
-using SwaggerMerge.Merge;
-using SwaggerMerge.Merge.Exceptions;
-using SwaggerMerge.Serialization;
+using CommandLine;
+using Document;
+using Infrastructure.Configuration;
+using Infrastructure.Configuration.Logging;
+using Infrastructure.Configuration.Merge;
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+using SwaggerMerge.Features.Merger;
 
 public class Program
 {
+    public static IHost Host { get; set; }
+
     public static async Task Main(string[] args)
     {
-        try
-        {
-            if (args is not { Length: 1 })
-            {
-                throw new SwaggerMergeException("Please provide the Swagger merge configuration file.");
-            }
+        SerilogConfigurator.ConfigureLogging();
+        Host = CreateHostBuilder(args).Build();
 
-            var configFile = args[0];
-
-            var config = await GetSwaggerMergeConfigurationAsync(configFile);
-            SwaggerMerger.ValidateConfiguration(config);
-            await SwaggerMerger.MergeAsync(config);
-        }
-        catch (SwaggerMergeException sme)
-        {
-            Console.WriteLine(sme.Message);
-        }
-        catch (Exception e)
-        {
-            Console.WriteLine($"An error occurred while merging Swagger documents. Detail: {e}");
-        }
+        await Parser.Default.ParseArguments<ConsoleOptions>(args)
+            .WithParsedAsync(async options => await GetService<ISwaggerMerger>().RunAsync(options.ConfigPath));
     }
 
-    private static async Task<SwaggerMergeConfiguration> GetSwaggerMergeConfigurationAsync(string configFilePath)
+    private static T GetService<T>()
+        where T : notnull
     {
-        SwaggerMergeConfiguration? config;
+        return Host.Services.GetRequiredService<T>();
+    }
 
-        try
-        {
-            config = await JsonFile.LoadFileAsync<SwaggerMergeConfiguration>(configFilePath);
-            Directory.SetCurrentDirectory(Path.GetDirectoryName(configFilePath));
-        }
-        catch (Exception ex)
-        {
-            throw new SwaggerMergeException("The provided Swagger merge configuration file is not valid.", ex);
-        }
+    private static IHostBuilder CreateHostBuilder(string[] args)
+    {
+        var hostBuilder = Microsoft.Extensions.Hosting.Host.CreateDefaultBuilder(args)
+            .ConfigureAppConfiguration((_, builder) => builder.SetBasePath(Directory.GetCurrentDirectory()))
+            .ConfigureServices((context, services) =>
+            {
+                services.AddLogging();
+                services.AddTransient<ISwaggerDocumentHandler, SwaggerDocumentHandler>();
+                services.AddTransient<ISwaggerMergeConfigurationFileHandler, SwaggerMergeConfigurationFileHandler>();
+                services.AddTransient<ISwaggerMergeHandler, SwaggerMergeHandler>();
+                services.AddTransient<ISwaggerMerger, SwaggerMerger>();
+            });
 
-        return config;
+        return hostBuilder;
     }
 }
