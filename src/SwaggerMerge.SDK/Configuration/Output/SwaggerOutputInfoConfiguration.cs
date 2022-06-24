@@ -1,7 +1,7 @@
-namespace SwaggerMerge.Merge.Configuration.Output;
+namespace SwaggerMerge.Configuration.Output;
 
 /// <summary>
-/// Defines the configuration for modifying the output Swagger document's description.
+/// Defines the configuration for modifying the output Swagger document's info metadata.
 /// </summary>
 public class SwaggerOutputInfoConfiguration
 {

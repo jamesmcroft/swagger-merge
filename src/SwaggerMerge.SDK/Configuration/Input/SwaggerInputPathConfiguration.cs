@@ -1,4 +1,4 @@
-namespace SwaggerMerge.Merge.Configuration.Input;
+namespace SwaggerMerge.Configuration.Input;
 
 /// <summary>
 /// Defines the configuration for modifying a Swagger document's paths.

@@ -1,9 +1,12 @@
-namespace SwaggerMerge.Merge;
+namespace SwaggerMerge;
 
+using Document;
 using MADE.Collections;
-using SwaggerMerge.Swagger;
 
-internal static partial class SwaggerMerger
+/// <summary>
+/// Defines the handler logic for merging Swagger document definitions.
+/// </summary>
+public partial class SwaggerMergeHandler
 {
     private static SwaggerDocumentDefinitions GetUsedDefinitions(SwaggerDocument document)
     {

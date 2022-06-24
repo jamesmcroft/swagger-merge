@@ -1,12 +1,19 @@
-namespace SwaggerMerge.Merge;
+namespace SwaggerMerge;
 
-using SwaggerMerge.Merge.Configuration;
-using SwaggerMerge.Serialization;
-using SwaggerMerge.Swagger;
+using Configuration;
+using Document;
 
-internal static partial class SwaggerMerger
+/// <summary>
+/// Defines an implementation for merging Swagger documents using the V2 format.
+/// </summary>
+public partial class SwaggerMergeHandler : ISwaggerMergeHandler
 {
-    public static async Task MergeAsync(SwaggerMergeConfiguration config)
+    /// <summary>
+    /// Merges Swagger documents together based on the given merge configuration.
+    /// </summary>
+    /// <param name="config">The configuration that contains the detail of the inputs and outputs.</param>
+    /// <returns>The merged Swagger document.</returns>
+    public SwaggerDocument Merge(SwaggerMergeConfiguration config)
     {
         var output = new SwaggerDocument { Host = config.Output.Host, BasePath = config.Output.BasePath };
 
@@ -14,7 +21,7 @@ internal static partial class SwaggerMerger
 
         foreach (var inputConfig in config.Inputs)
         {
-            var input = await JsonFile.LoadFileAsync<SwaggerDocument>(inputConfig.File);
+            var input = inputConfig.File;
 
             outputTitle = UpdateOutputTitleFromInput(outputTitle, inputConfig, input);
             UpdateOutputPathsFromInput(output, inputConfig, input);
@@ -23,9 +30,7 @@ internal static partial class SwaggerMerger
 
         FinalizeOutput(output, outputTitle, config);
 
-        await JsonFile.SaveFileAsync(config.Output.File, output);
-
-        Console.WriteLine($"Merged {config.Inputs.Count()} files into '{config.Output.File}'");
+        return output;
     }
 
     private static void FinalizeOutput(SwaggerDocument? output, string outputTitle, SwaggerMergeConfiguration config)
@@ -36,12 +41,10 @@ internal static partial class SwaggerMerger
         }
 
         // Where exclusions have been specified, remove any definitions from the output where they are no longer valid
-        if (config.Inputs.Any(x => x.Path is { OperationExclusions: { } } && x.Path.OperationExclusions.Any()))
+        if (config.Inputs.Any(x => x.Path is { OperationExclusions: { } } && x.Path.OperationExclusions.Any())
+            && output.Definitions != null)
         {
-            if (output.Definitions != null)
-            {
-                output.Definitions = GetUsedDefinitions(output);
-            }
+            output.Definitions = GetUsedDefinitions(output);
         }
 
         output.Info.Title = outputTitle;

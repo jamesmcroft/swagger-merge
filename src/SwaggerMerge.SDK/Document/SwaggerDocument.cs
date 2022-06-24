@@ -1,11 +1,10 @@
-namespace SwaggerMerge.Swagger;
+namespace SwaggerMerge.Document;
 
 using System.Globalization;
 using System.Runtime.Serialization;
 using MADE.Collections;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using Serialization;
 
 /// <summary>
 /// Defines the detail of a Swagger document.
@@ -103,13 +102,13 @@ public class SwaggerDocument
         JsonTextWriter jw = new JsonTextWriter(sw);
         jsonObject.WriteTo(jw);
         var json = sw.ToString();
-        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, JsonFile.Settings) ?? new SwaggerDocumentProperty();
+        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, SwaggerDocumentJson.Settings) ?? new SwaggerDocumentProperty();
     }
 
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {
-        var objectTokens = JTokenProperties?.Where(x => x.Value is JObject).ToList();
+        var objectTokens = this.JTokenProperties?.Where(x => x.Value is JObject).ToList();
 
         if (objectTokens == null || !objectTokens.Any())
         {
@@ -127,7 +126,7 @@ public class SwaggerDocument
     [OnSerializing]
     private void OnSerializing(StreamingContext context)
     {
-        var additionalProperties = AdditionalProperties?.ToDictionary(
+        var additionalProperties = this.AdditionalProperties?.ToDictionary(
             x => x.Key,
             x => JToken.FromObject(x.Value));
 
@@ -136,7 +135,7 @@ public class SwaggerDocument
             return;
         }
 
-        JTokenProperties.AddRange(additionalProperties);
+        this.JTokenProperties.AddRange(additionalProperties);
     }
 }
 
@@ -226,13 +225,13 @@ public class SwaggerDocumentSecurityScheme
         JsonTextWriter jw = new JsonTextWriter(sw);
         jsonObject.WriteTo(jw);
         var json = sw.ToString();
-        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, JsonFile.Settings) ?? new SwaggerDocumentProperty();
+        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, SwaggerDocumentJson.Settings) ?? new SwaggerDocumentProperty();
     }
 
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {
-        var objectTokens = JTokenProperties?.Where(x => x.Value is JObject).ToList();
+        var objectTokens = this.JTokenProperties?.Where(x => x.Value is JObject).ToList();
 
         if (objectTokens == null || !objectTokens.Any())
         {
@@ -250,7 +249,7 @@ public class SwaggerDocumentSecurityScheme
     [OnSerializing]
     private void OnSerializing(StreamingContext context)
     {
-        var additionalProperties = AdditionalProperties?.ToDictionary(
+        var additionalProperties = this.AdditionalProperties?.ToDictionary(
             x => x.Key,
             x => JToken.FromObject(x.Value));
 
@@ -259,7 +258,7 @@ public class SwaggerDocumentSecurityScheme
             return;
         }
 
-        JTokenProperties.AddRange(additionalProperties);
+        this.JTokenProperties.AddRange(additionalProperties);
     }
 }
 
@@ -395,13 +394,13 @@ public class SwaggerDocumentOperation
         JsonTextWriter jw = new JsonTextWriter(sw);
         jsonObject.WriteTo(jw);
         var json = sw.ToString();
-        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, JsonFile.Settings) ?? new SwaggerDocumentProperty();
+        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, SwaggerDocumentJson.Settings) ?? new SwaggerDocumentProperty();
     }
 
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {
-        var objectTokens = JTokenProperties?.Where(x => x.Value is JObject).ToList();
+        var objectTokens = this.JTokenProperties?.Where(x => x.Value is JObject).ToList();
 
         if (objectTokens == null || !objectTokens.Any())
         {
@@ -419,7 +418,7 @@ public class SwaggerDocumentOperation
     [OnSerializing]
     private void OnSerializing(StreamingContext context)
     {
-        var additionalProperties = AdditionalProperties?.ToDictionary(
+        var additionalProperties = this.AdditionalProperties?.ToDictionary(
             x => x.Key,
             x => JToken.FromObject(x.Value));
 
@@ -428,7 +427,7 @@ public class SwaggerDocumentOperation
             return;
         }
 
-        JTokenProperties.AddRange(additionalProperties);
+        this.JTokenProperties.AddRange(additionalProperties);
     }
 }
 
@@ -480,13 +479,14 @@ public class SwaggerDocumentProperty
         JsonTextWriter jw = new JsonTextWriter(sw);
         jsonObject.WriteTo(jw);
         var json = sw.ToString();
-        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, JsonFile.Settings) ?? new SwaggerDocumentProperty();
+        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, SwaggerDocumentJson.Settings) ??
+               new SwaggerDocumentProperty();
     }
 
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {
-        var objectTokens = JTokenProperties?.Where(x => x.Value is JObject).ToList();
+        var objectTokens = this.JTokenProperties?.Where(x => x.Value is JObject).ToList();
 
         if (objectTokens == null || !objectTokens.Any())
         {
@@ -503,7 +503,7 @@ public class SwaggerDocumentProperty
     [OnSerializing]
     private void OnSerializing(StreamingContext context)
     {
-        var additionalProperties = AdditionalProperties?.ToDictionary(
+        var additionalProperties = this.AdditionalProperties?.ToDictionary(
             x => x.Key,
             x => JToken.FromObject(x.Value));
 
@@ -512,6 +512,6 @@ public class SwaggerDocumentProperty
             return;
         }
 
-        JTokenProperties.AddRange(additionalProperties);
+        this.JTokenProperties.AddRange(additionalProperties);
     }
 }

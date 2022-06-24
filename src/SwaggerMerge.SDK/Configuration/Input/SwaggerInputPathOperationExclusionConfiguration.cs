@@ -1,4 +1,4 @@
-namespace SwaggerMerge.Merge.Configuration.Input;
+namespace SwaggerMerge.Configuration.Input;
 
 using Newtonsoft.Json.Linq;
 
