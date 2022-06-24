@@ -42,26 +42,28 @@ SwaggerDocument merged = handler.Merge(config);
 
 The configuration object is made up of several options that allow you to customize and tailor the inputs and output.
 
-- `inputs` - **Required**. An array of input files. Each input file is a JSON object with the following properties:
-  - `file` - **Required**. The `SwaggerDocument` input file.
-  - `path` - **Optional**. A configuration object for the paths of APIs with the following properties:
-    - `prepend` - **Optional**. A string to prepend to the path of each operation in the input file.
-    - `stripStart` - **Optional**. A string to strip from the start of the path of each operation in the input file.
-  - `info` - **Optional**. A configuration object for the info section with the following properties:
-    - `append` - **Optional**. A boolean value that determines whether the input file's info title should be appended to the output file's info title.
-    - `title` - **Optional**. A string to use as the title of the output file that is different to the original.
-- `output` - **Required**. A configuration object for the output file with the following properties:
-  - `info` - **Optional**. A configuration object for the info section with the following properties:
-    - `title` - **Optional**. A string to use as the title of the output file.
-    - `version` - **Optional**. A string to use as the version of the output file.
-  - `basePath` - **Optional**. A string to use as the base path of the output file.
-  - `host` - **Optional**. A string to use as the host of the output file.
-  - `schemes` - **Optional**. An array of strings to use as the schemes of the output file.
-  - `securityDefinitions` - **Optional**. A configuration object for the security definitions of the output file with the following properties:
-    - `type` - **Optional**. A string to use as the type of the security definition.
-    - `in` - **Optional**. A string to use as the in of the security definition.
-    - `name` - **Optional**. A string to use as the name of the security definition.
-  - `security` - **Optional**. An array of security requirements to use in the output file.
+- `Inputs` - **Required**. An array of input files. Each input file is a JSON object with the following properties:
+  - `File` - **Required**. The `SwaggerDocument` input file.
+  - `Path` - **Optional**. A configuration object for the paths of APIs with the following properties:
+    - `Prepend` - **Optional**. A string to prepend to the path of each operation in the input file.
+    - `StripStart` - **Optional**. A string to strip from the start of the path of each operation in the input file.
+  - `Info` - **Optional**. A configuration object for the info section with the following properties:
+    - `Append` - **Optional**. A boolean value that determines whether the input file's info title should be appended to the output file's info title.
+    - `Title` - **Optional**. A string to use as the title of the output file that is different to the original.
+- `Output` - **Required**. A configuration object for the output file with the following properties:
+  - `Info` - **Optional**. A configuration object for the info section with the following properties:
+    - `Title` - **Optional**. A string to use as the title of the output file.
+    - `Version` - **Optional**. A string to use as the version of the output file.
+  - `BasePath` - **Optional**. A string to use as the base path of the output file.
+  - `Host` - **Optional**. A string to use as the host of the output file.
+  - `Schemes` - **Optional**. An array of strings to use as the schemes of the output file.
+  - `SecurityDefinitions` - **Optional**. A configuration object for the security definitions of the output file with the following properties:
+    - `Type` - **Optional**. A string to use as the type of the security definition.
+    - `In` - **Optional**. A string to use as the in of the security definition.
+    - `Name` - **Optional**. A string to use as the name of the security definition.
+  - `Security` - **Optional**. An array of security requirements to use in the output file.
+
+**Note**, `SwaggerMergeHandler` has an `ISwaggerMergeHandler` interface to ease the extensibility, testability, and support for dependency injection in your applications.
 
 ### Handling `SwaggerDocument` objects
 
@@ -83,6 +85,37 @@ SwaggerDocument documentFromJson = handler.LoadFromJson(swaggerJsonContent);
 
 // Save as JSON to a file path
 await handler.SaveToFilePathAsync(documentFromFile, "path/to/file.json");
+```
+
+**Note**, `SwaggerDocumentHandler` has an `ISwaggerDocumentHandler` interface to ease the extensibility, testability, and support for dependency injection in your applications.
+
+### Example usage
+
+```csharp
+namespace Merger;
+
+using SwaggerMerge;
+using SwaggerMerge.Document;
+
+internal class SwaggerMerger
+{
+    private readonly ISwaggerMergeHandler mergeHandler;
+    private readonly ISwaggerDocumentHandler documentHandler;
+
+    public SwaggerMerger(
+        ISwaggerMergeHandler mergeHandler,
+        ISwaggerDocumentHandler documentHandler)
+    {
+        this.mergeHandler = mergeHandler;
+        this.documentHandler = documentHandler;
+    }
+
+    public async Task MergeAsync(SwaggerMergeConfiguration config)
+    {
+        var output = this.mergeHandler.Merge(config);
+        await this.documentHandler.SaveToPathAsync(output, configFile.Output.File);
+    }
+}
 ```
 
 ## Contributing 🤝🏻
