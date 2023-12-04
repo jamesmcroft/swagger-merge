@@ -43,16 +43,16 @@ jobs:
         echo "BUILD_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
       shell: pwsh
 
-    - name: Setup .NET 6.0
+    - name: Setup .NET 8.0
       uses: actions/setup-dotnet@v1
       with:
-        dotnet-version: 6.0.x
+        dotnet-version: 8.0.x
 
     - name: Restore dependencies
       run: dotnet restore $SOLUTION
 
     - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v1.0.2
+      uses: microsoft/setup-msbuild@v1.1.3
 
     - name: Build
       run: msbuild $env:SOLUTION /p:Configuration=$env:BUILD_CONFIG /p:Platform="Any CPU" -p:Version=$env:BUILD_VERSION
