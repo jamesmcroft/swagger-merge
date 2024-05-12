@@ -5,20 +5,18 @@ on:
     branches:
       - main
     paths:
-      - src/**
-      - tests/**
-      - build/**
+      - src/SwaggerMerge.SDK/**
+      - build/GetBuildVersion.psm1
       - .github/workflows/ci-sdk.yml
-      - global.json
+      - Directory.Build.props
   pull_request:
     branches:
       - main
     paths:
-      - src/**
-      - tests/**
-      - build/**
+      - src/SwaggerMerge.SDK/**
+      - build/GetBuildVersion.psm1
       - .github/workflows/ci-sdk.yml
-      - global.json
+      - Directory.Build.props
   workflow_dispatch:
 
 jobs:
