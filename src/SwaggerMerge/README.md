@@ -2,7 +2,6 @@
 
 [![GitHub release](https://img.shields.io/github/release/jamesmcroft/swagger-merge.svg)](https://github.com/jamesmcroft/swagger-merge/releases)
 [![Build status](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci.yml)
-[![Twitter Followers](https://img.shields.io/twitter/follow/jamesmcroft?label=follow%20%40jamesmcroft&style=flat)](https://twitter.com/jamesmcroft)
 [![.NET Tool](https://img.shields.io/nuget/v/SwaggerMerge?label=dotnet%20tool)](https://www.nuget.org/packages/SwaggerMerge/)
 [![SDK](https://img.shields.io/nuget/v/SwaggerMerge.SDK?label=sdk)](https://www.nuget.org/packages/SwaggerMerge.SDK/)
 
@@ -128,7 +127,6 @@ As many developers know, projects like this are built and maintained in maintain
 👤 **James Croft**
 
 - Website: <https://www.jamescroft.co.uk>
-- Twitter: [@jamesmcroft](https://twitter.com/jamesmcroft)
 - Github: [@jamesmcroft](https://github.com/jamesmcroft)
 - LinkedIn: [@jmcroft](https://linkedin.com/in/jmcroft)
 

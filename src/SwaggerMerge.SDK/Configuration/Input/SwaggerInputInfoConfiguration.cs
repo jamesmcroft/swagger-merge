@@ -8,7 +8,7 @@ public class SwaggerInputInfoConfiguration
     /// <summary>
     /// Gets or sets a value indicating whether to append the document title.
     /// </summary>
-    public bool Append { get; set; } = false;
+    public bool Append { get; set; }
 
     /// <summary>
     /// Gets or sets the title to append if <see cref="Append"/> is <b>true</b>.

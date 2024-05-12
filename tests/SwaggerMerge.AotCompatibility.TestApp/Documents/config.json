@@ -1,0 +1,33 @@
+{
+  "inputs": [
+    {
+      "file": "./pet.swagger.json"
+    },
+    {
+      "file": "./store.swagger.json",
+      "info": {
+        "append": true,
+        "title": " Including Store"
+      }
+    },
+    {
+      "file": "./user.swagger.json",
+      "info": {
+        "append": true,
+        "title": " Including User"
+      }
+    }
+  ],
+  "output": {
+    "file": "./api.merged.json",
+    "info": {
+      "title": "Services",
+      "version": "1.0"
+    },
+    "basePath": "/",
+    "host": "localhost",
+    "schemes": [
+      "https"
+    ]
+  }
+}

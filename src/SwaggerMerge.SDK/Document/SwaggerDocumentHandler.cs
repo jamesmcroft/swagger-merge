@@ -26,14 +26,10 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
     /// <returns>A <see cref="SwaggerDocument"/> representing the JSON content.</returns>
     public SwaggerDocument LoadFromJson(string swaggerJson)
     {
-        var deserializedContent = JsonConvert.DeserializeObject<SwaggerDocument>(swaggerJson, SwaggerDocumentJson.Settings);
-        if (deserializedContent == null)
-        {
-            throw new InvalidOperationException(
-                "The Swagger document JSON could not be loaded correctly as the format is not as expected.");
-        }
-
-        return deserializedContent;
+        var deserializedContent =
+            JsonConvert.DeserializeObject<SwaggerDocument>(swaggerJson, SwaggerDocumentJson.Settings);
+        return deserializedContent ?? throw new InvalidOperationException(
+            "The Swagger document JSON could not be loaded correctly as the format is not as expected.");
     }
 
     /// <summary>
@@ -56,7 +52,7 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
 
     private static async Task WriteAllTextAsync(string content, string filePath)
     {
-        using var stream = new StreamWriter(filePath, false, Encoding.UTF8);
+        await using var stream = new StreamWriter(filePath, false, Encoding.UTF8);
         await stream.WriteAsync(content);
     }
 }

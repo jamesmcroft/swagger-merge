@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SwaggerMerge", "src\Swagger
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "SwaggerMerge.SDK", "src\SwaggerMerge.SDK\SwaggerMerge.SDK.csproj", "{09F8D86D-EDF0-499E-A925-ABF25EA7D9A5}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{67C4201E-5DAB-4F0D-AA21-3CE21D64FB17}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SwaggerMerge.AotCompatibility.TestApp", "tests\SwaggerMerge.AotCompatibility.TestApp\SwaggerMerge.AotCompatibility.TestApp.csproj", "{EFFBE78A-04BF-4FE1-881B-C5609A32D579}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,9 +25,16 @@ Global
 		{09F8D86D-EDF0-499E-A925-ABF25EA7D9A5}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{09F8D86D-EDF0-499E-A925-ABF25EA7D9A5}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{09F8D86D-EDF0-499E-A925-ABF25EA7D9A5}.Release|Any CPU.Build.0 = Release|Any CPU
+		{EFFBE78A-04BF-4FE1-881B-C5609A32D579}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{EFFBE78A-04BF-4FE1-881B-C5609A32D579}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{EFFBE78A-04BF-4FE1-881B-C5609A32D579}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{EFFBE78A-04BF-4FE1-881B-C5609A32D579}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{EFFBE78A-04BF-4FE1-881B-C5609A32D579} = {67C4201E-5DAB-4F0D-AA21-3CE21D64FB17}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {BAB53FDC-9D8B-44CF-B3C8-9755AD59B58E}

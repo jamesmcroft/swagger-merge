@@ -1,14 +1,8 @@
 namespace SwaggerMerge.Infrastructure.Configuration.Merge;
 
-internal class SwaggerMergeConfigurationFileValidationResult
+internal sealed class SwaggerMergeConfigurationFileValidationResult(bool isValid, IEnumerable<string>? errors = default)
 {
-    public SwaggerMergeConfigurationFileValidationResult(bool isValid, IEnumerable<string>? errors = default)
-    {
-        this.IsValid = isValid;
-        this.Errors = errors;
-    }
+    public bool IsValid { get; } = isValid;
 
-    public bool IsValid { get; }
-
-    public IEnumerable<string>? Errors { get; }
+    public IEnumerable<string>? Errors { get; } = errors;
 }
