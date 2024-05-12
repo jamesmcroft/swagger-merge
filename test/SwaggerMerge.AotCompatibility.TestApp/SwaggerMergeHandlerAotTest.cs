@@ -24,7 +24,7 @@ internal class SwaggerMergeHandlerAotTest
 
     private static SwaggerMergeConfiguration GetSwaggerMergeConfiguration()
     {
-        var documents = Directory.EnumerateFiles("documents", "*.swagger.json")
+        var documents = Directory.EnumerateFiles("Documents", "*.swagger.json")
             .Select(File.ReadAllText)
             .Select(JsonConvert.DeserializeObject<SwaggerDocument>)
             .OfType<SwaggerDocument>()
