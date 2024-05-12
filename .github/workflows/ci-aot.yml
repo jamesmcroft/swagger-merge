@@ -1,0 +1,43 @@
+name: CI - AOT Compatibility
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - src/**
+      - tests/**
+      - build/**
+      - .github/workflows/ci-aot.yml
+      - global.json
+  pull_request:
+    branches:
+      - main
+    paths:
+      - src/**
+      - tests/**
+      - build/**
+      - .github/workflows/ci-aot.yml
+      - global.json
+  workflow_dispatch:
+
+jobs:
+  aot-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest]
+        version: [net8.0]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup dotnet
+        uses: actions/setup-dotnet@v3
+
+      - name: Assert static analysis warning count and run AOT compatibility tests
+        shell: pwsh
+        run: .\build\Test-AotCompat.ps1 ${{ matrix.version }}
