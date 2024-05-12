@@ -13,9 +13,6 @@ foreach ($line in $($publishOutput -split "`r`n")) {
     }
 }
 
-New-Item -ItemType Directory -Path $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/bin/Release/$targetNetFramework/linux-x64/Documents -Force
-Copy-Item -Path $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/Documents -Destination $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/bin/Release/$targetNetFramework/linux-x64/Documents -Recurse -Force
-
 Push-Location $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/bin/Release/$targetNetFramework/linux-x64
 
 Write-Host "Executing test App..."
