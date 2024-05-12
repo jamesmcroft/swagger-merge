@@ -25,7 +25,6 @@ jobs:
       fail-fast: false
       matrix:
         os: [windows-latest, ubuntu-latest]
-        version: [net6.0, net7.0, net8.0]
 
     env:
       BUILD_CONFIG: "Release"
@@ -48,6 +47,11 @@ jobs:
 
       - name: Setup dotnet
         uses: actions/setup-dotnet@v3
+        with:
+          dotnet-version: |
+            6.0.x
+            7.0.x
+            8.0.x
 
       - name: Restore dependencies
         run: dotnet restore $PROJECT
