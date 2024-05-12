@@ -5,20 +5,20 @@ on:
     branches:
       - main
     paths:
-      - src/**
-      - tests/**
-      - build/**
+      - src/SwaggerMerge.SDK/**
+      - test/SwaggerMerge.AotCompatibility.TestApp/**
+      - build/Test-AotCompat.ps1
       - .github/workflows/ci-aot.yml
-      - global.json
+      - Directory.Build.props
   pull_request:
     branches:
       - main
     paths:
-      - src/**
-      - tests/**
-      - build/**
+      - src/SwaggerMerge.SDK/**
+      - test/SwaggerMerge.AotCompatibility.TestApp/**
+      - build/Test-AotCompat.ps1
       - .github/workflows/ci-aot.yml
-      - global.json
+      - Directory.Build.props
   workflow_dispatch:
 
 jobs:
