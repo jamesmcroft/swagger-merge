@@ -1,33 +1,27 @@
 namespace SwaggerMerge.Infrastructure.Configuration.Merge;
 
 using System.Text;
+using System.Text.Json;
 using Document;
 using Exceptions;
-using Newtonsoft.Json;
 using SwaggerMerge.Configuration;
 using SwaggerMerge.Configuration.Input;
 
-internal class SwaggerMergeConfigurationFileHandler : ISwaggerMergeConfigurationFileHandler
+internal sealed class SwaggerMergeConfigurationFileHandler(ISwaggerDocumentHandler documentHandler)
+    : ISwaggerMergeConfigurationFileHandler
 {
-    private readonly ISwaggerDocumentHandler documentHandler;
-
-    public SwaggerMergeConfigurationFileHandler(ISwaggerDocumentHandler documentHandler)
-    {
-        this.documentHandler = documentHandler;
-    }
-
     public async Task<SwaggerMergeConfigurationFile> LoadAsync(string configFilePath)
     {
         var content = await ReadAllTextAsync(configFilePath);
-        var config = JsonConvert.DeserializeObject<SwaggerMergeConfigurationFile>(content);
+        var config = JsonSerializer.Deserialize<SwaggerMergeConfigurationFile>(content) ??
+                     throw new SwaggerMergeException(
+                         $"The Swagger merge configuration file at '{configFilePath}' could not be loaded correctly as it is not in the correct format.");
 
-        if (config == null)
+        var configDirectory = Path.GetDirectoryName(configFilePath);
+        if (configDirectory != null)
         {
-            throw new SwaggerMergeException(
-                $"The Swagger merge configuration file at '{configFilePath}' could not be loaded correctly as it is not in the correct format.");
+            Directory.SetCurrentDirectory(configDirectory);
         }
-
-        Directory.SetCurrentDirectory(Path.GetDirectoryName(configFilePath));
 
         return config;
     }
@@ -64,7 +58,7 @@ internal class SwaggerMergeConfigurationFileHandler : ISwaggerMergeConfiguration
 
         foreach (var input in config.Inputs)
         {
-            var inputFile = await this.documentHandler.LoadFromFilePathAsync(input.File);
+            var inputFile = await documentHandler.LoadFromFilePathAsync(input.File);
             inputs.Add(new SwaggerInputConfiguration { File = inputFile, Path = input.Path, Info = input.Info });
         }
 

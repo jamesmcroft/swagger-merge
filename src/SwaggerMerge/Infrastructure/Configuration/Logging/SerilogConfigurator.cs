@@ -1,3 +1,5 @@
+using System.Globalization;
+
 namespace SwaggerMerge.Infrastructure.Configuration.Logging;
 
 using Serilog;
@@ -15,7 +17,8 @@ internal static class SerilogConfigurator
             .WriteTo.Console(
                 outputTemplate: LoggingMessageTemplate,
                 theme: AnsiConsoleTheme.Literate,
-                restrictedToMinimumLevel: LogEventLevel.Debug)
+                restrictedToMinimumLevel: LogEventLevel.Debug,
+                formatProvider: CultureInfo.InvariantCulture)
             .CreateLogger();
     }
 }

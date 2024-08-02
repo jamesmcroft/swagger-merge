@@ -1,10 +1,11 @@
 namespace SwaggerMerge.Document;
 
-using System.Globalization;
+using System.IO;
 using System.Runtime.Serialization;
-using MADE.Collections;
-using Newtonsoft.Json;
-using Newtonsoft.Json.Linq;
+using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
+using Common.Extensions;
 
 /// <summary>
 /// Defines the detail of a Swagger document.
@@ -14,73 +15,73 @@ public class SwaggerDocument
     /// <summary>
     /// Gets or sets the Swagger specification version.
     /// </summary>
-    [JsonProperty("swagger", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("swagger"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string SwaggerVersion { get; set; } = "2.0";
 
     /// <summary>
     /// Gets or sets the metadata about the API.
     /// </summary>
-    [JsonProperty("info", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("info"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public SwaggerDocumentInfo Info { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the host (name or IP) serving the API.
     /// </summary>
-    [JsonProperty("host", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("host"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Host { get; set; }
 
     /// <summary>
     /// Gets or sets the base path on which the API is served, which is relative to the host.
     /// </summary>
-    [JsonProperty("basePath", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("basePath"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? BasePath { get; set; }
 
     /// <summary>
     /// Gets or sets the transfer protocol of the API.
     /// </summary>
-    [JsonProperty("schemes", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("schemes"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<string>? Schemes { get; set; }
 
     /// <summary>
     /// Gets or sets a list of MIME types the APIs can produce.
     /// </summary>
-    [JsonProperty("produces", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("produces"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<string>? Produces { get; set; }
 
     /// <summary>
     /// Gets or sets the available paths and operations for the API.
     /// </summary>
-    [JsonProperty("paths", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("paths"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public SwaggerDocumentPaths? Paths { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the data types produced and consumed by operations.
     /// </summary>
-    [JsonProperty("definitions", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("definitions"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public SwaggerDocumentDefinitions? Definitions { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the parameters to be reused across operations.
     /// </summary>
-    [JsonProperty("parameters", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("parameters"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public Dictionary<string, SwaggerDocumentProperty>? Parameters { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the responses to be reused across operations.
     /// </summary>
-    [JsonProperty("responses", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("responses"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public Dictionary<string, SwaggerDocumentProperty>? Responses { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the security scheme to be reused across the specification.
     /// </summary>
-    [JsonProperty("securityDefinitions", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("securityDefinitions"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public SwaggerDocumentSecurityDefinitions? SecurityDefinitions { get; set; } = new();
 
     /// <summary>
     /// Gets or sets the security options available in the Swagger document.
     /// </summary>
-    [JsonProperty("security", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("security"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<SwaggerDocumentSecurityRequirement>? Security { get; set; } = new();
 
     /// <summary>
@@ -89,69 +90,76 @@ public class SwaggerDocument
     [JsonIgnore]
     public Dictionary<string, SwaggerDocumentProperty>? AdditionalProperties { get; set; }
 
-    [JsonExtensionData] public Dictionary<string, JToken>? JTokenProperties { get; set; }
+    /// <summary>
+    /// Gets or sets the additional JSON properties that are not covered by the defined Swagger properties.
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? JTokenProperties { get; set; }
 
-    private static SwaggerDocumentProperty ToSwaggerDocumentProperty(JToken? jsonObject)
+    private static SwaggerDocumentProperty ToSwaggerDocumentProperty(JsonElement? jsonObject)
     {
         if (jsonObject == null)
         {
             return new SwaggerDocumentProperty();
         }
 
-        using StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
-        JsonTextWriter jw = new JsonTextWriter(sw);
-        jsonObject.WriteTo(jw);
-        var json = sw.ToString();
-        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, SwaggerDocumentJson.Settings) ?? new SwaggerDocumentProperty();
+        using var sw = new MemoryStream();
+        using var jw = new Utf8JsonWriter(sw);
+        jsonObject.Value.WriteTo(jw);
+        jw.Flush();
+        var json = Encoding.UTF8.GetString(sw.ToArray());
+        return JsonSerializer.Deserialize(json, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty) ??
+               new SwaggerDocumentProperty();
     }
 
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {
-        var objectTokens = this.JTokenProperties?.Where(x => x.Value is JObject).ToList();
-
-        if (objectTokens == null || !objectTokens.Any())
+        if (JTokenProperties == null)
         {
             return;
         }
 
-        this.AdditionalProperties = objectTokens.ToDictionary(
+        var objectTokens = JTokenProperties.ToList();
+
+        if (!objectTokens.Any())
+        {
+            return;
+        }
+
+        AdditionalProperties = objectTokens.ToDictionary(
             x => x.Key,
-            x => ToSwaggerDocumentProperty(x.Value as JObject));
+            x => ToSwaggerDocumentProperty(x.Value));
 
-        this.JTokenProperties.RemoveRange(objectTokens);
+        JTokenProperties.RemoveRange(objectTokens);
     }
-
 
     [OnSerializing]
     private void OnSerializing(StreamingContext context)
     {
-        var additionalProperties = this.AdditionalProperties?.ToDictionary(
+        var additionalProperties = AdditionalProperties?.ToDictionary(
             x => x.Key,
-            x => JToken.FromObject(x.Value));
+            x => JsonSerializer.SerializeToElement(x.Value, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty));
 
         if (additionalProperties == null)
         {
             return;
         }
 
-        this.JTokenProperties.AddRange(additionalProperties);
+        JTokenProperties ??= new();
+        JTokenProperties.AddRange(additionalProperties);
     }
 }
 
 /// <summary>
 /// Defines the required security schemes to execute an operation.
 /// </summary>
-public class SwaggerDocumentSecurityRequirement : Dictionary<string, List<string>>
-{
-}
+public class SwaggerDocumentSecurityRequirement : Dictionary<string, List<string>>;
 
 /// <summary>
 /// Defines the details of an object to hold security schemes to be reused across the specification.
 /// </summary>
-public class SwaggerDocumentSecurityDefinitions : Dictionary<string, SwaggerDocumentSecurityScheme>
-{
-}
+public class SwaggerDocumentSecurityDefinitions : Dictionary<string, SwaggerDocumentSecurityScheme>;
 
 /// <summary>
 /// Defines the security scheme that can be used by the operations.
@@ -161,49 +169,49 @@ public class SwaggerDocumentSecurityScheme
     /// <summary>
     /// Gets or sets the type of security scheme.
     /// </summary>
-    [JsonProperty("type", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("type"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Type { get; set; }
 
     /// <summary>
     /// Gets or sets a short description of the security scheme.
     /// </summary>
-    [JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("description"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Description { get; set; }
 
     /// <summary>
     /// Gets or sets the name of the header or query parameter to be used.
     /// </summary>
-    [JsonProperty("name", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("name"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Name { get; set; }
 
     /// <summary>
     /// Gets or sets the location of the API key.
     /// </summary>
-    [JsonProperty("in", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("in"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? In { get; set; }
 
     /// <summary>
     /// Gets or sets the flow used by the OAuth2 security scheme.
     /// </summary>
-    [JsonProperty("flow", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("flow"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Flow { get; set; }
 
     /// <summary>
     /// Gets or sets the authorization URL to be used for this flow.
     /// </summary>
-    [JsonProperty("authorizationUrl", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("authorizationUrl"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? AuthorizationUrl { get; set; }
 
     /// <summary>
     /// Gets or sets the token URL to be used for this flow.
     /// </summary>
-    [JsonProperty("tokenUrl", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("tokenUrl"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? TokenUrl { get; set; }
 
     /// <summary>
     /// Gets or sets the available scopes for the OAuth2 security scheme.
     /// </summary>
-    [JsonProperty("scopes", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("scopes"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public SwaggerDocumentScopes? Scopes { get; set; }
 
     /// <summary>
@@ -212,72 +220,88 @@ public class SwaggerDocumentSecurityScheme
     [JsonIgnore]
     public Dictionary<string, SwaggerDocumentProperty>? AdditionalProperties { get; set; }
 
-    [JsonExtensionData] public Dictionary<string, JToken>? JTokenProperties { get; set; }
+    /// <summary>
+    /// Gets or sets the additional JSON properties that are not covered by the defined Swagger properties.
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? JTokenProperties { get; set; }
 
-    private static SwaggerDocumentProperty ToSwaggerDocumentProperty(JToken? jsonObject)
+    private static SwaggerDocumentProperty ToSwaggerDocumentProperty(JsonElement? jsonObject)
     {
         if (jsonObject == null)
         {
             return new SwaggerDocumentProperty();
         }
 
-        using StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
-        JsonTextWriter jw = new JsonTextWriter(sw);
-        jsonObject.WriteTo(jw);
-        var json = sw.ToString();
-        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, SwaggerDocumentJson.Settings) ?? new SwaggerDocumentProperty();
+        using var sw = new MemoryStream();
+        using var jw = new Utf8JsonWriter(sw);
+        jsonObject.Value.WriteTo(jw);
+        jw.Flush();
+        var json = Encoding.UTF8.GetString(sw.ToArray());
+        return JsonSerializer.Deserialize(json, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty) ??
+               new SwaggerDocumentProperty();
     }
 
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {
-        var objectTokens = this.JTokenProperties?.Where(x => x.Value is JObject).ToList();
-
-        if (objectTokens == null || !objectTokens.Any())
+        if (JTokenProperties == null)
         {
             return;
         }
 
-        this.AdditionalProperties = objectTokens.ToDictionary(
+        var objectTokens = JTokenProperties.ToList();
+
+        if (!objectTokens.Any())
+        {
+            return;
+        }
+
+        AdditionalProperties = objectTokens.ToDictionary(
             x => x.Key,
-            x => ToSwaggerDocumentProperty(x.Value as JObject));
+            x => ToSwaggerDocumentProperty(x.Value));
 
-        this.JTokenProperties.RemoveRange(objectTokens);
+        JTokenProperties.RemoveRange(objectTokens);
     }
-
 
     [OnSerializing]
     private void OnSerializing(StreamingContext context)
     {
-        var additionalProperties = this.AdditionalProperties?.ToDictionary(
+        var additionalProperties = AdditionalProperties?.ToDictionary(
             x => x.Key,
-            x => JToken.FromObject(x.Value));
+            x => JsonSerializer.SerializeToElement(x.Value, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty));
 
         if (additionalProperties == null)
         {
             return;
         }
 
-        this.JTokenProperties.AddRange(additionalProperties);
+        JTokenProperties ??= new();
+        JTokenProperties.AddRange(additionalProperties);
     }
 }
 
 /// <summary>
 /// Defines the list of available scopes for an OAuth2 security scheme.
 /// </summary>
-public class SwaggerDocumentScopes : Dictionary<string, object>
-{
-}
+public class SwaggerDocumentScopes : Dictionary<string, object>;
 
 /// <summary>
 /// Defines the details of an object to hold data types that can be consumed and produced by operations.
 /// </summary>
 public class SwaggerDocumentDefinitions : Dictionary<string, SwaggerDocumentProperty>
 {
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SwaggerDocumentDefinitions"/> class.
+    /// </summary>
     public SwaggerDocumentDefinitions()
     {
     }
 
+    /// <summary>
+    /// Initializes a new instance of the <see cref="SwaggerDocumentDefinitions"/> class with the specified document definitions.
+    /// </summary>
+    /// <param name="dictionary">The dictionary of document definitions.</param>
     public SwaggerDocumentDefinitions(IDictionary<string, SwaggerDocumentProperty> dictionary)
         : base(dictionary)
     {
@@ -292,29 +316,25 @@ public class SwaggerDocumentInfo
     /// <summary>
     /// Gets or sets the title of the API.
     /// </summary>
-    [JsonProperty("title", NullValueHandling = NullValueHandling.Ignore)]
-    public string Title { get; set; }
+    [JsonPropertyName("title"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? Title { get; set; }
 
     /// <summary>
     /// Gets or sets the version of the API.
     /// </summary>
-    [JsonProperty("version", NullValueHandling = NullValueHandling.Ignore)]
-    public string Version { get; set; }
+    [JsonPropertyName("version"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
+    public string? Version { get; set; }
 }
 
 /// <summary>
 /// Defines the relative paths to the individual endpoints.
 /// </summary>
-public class SwaggerDocumentPaths : Dictionary<string, SwaggerDocumentPathItem>
-{
-}
+public class SwaggerDocumentPaths : Dictionary<string, SwaggerDocumentPathItem>;
 
 /// <summary>
 /// Defines the operations available on a single path.
 /// </summary>
-public class SwaggerDocumentPathItem : Dictionary<string, SwaggerDocumentOperation>
-{
-}
+public class SwaggerDocumentPathItem : Dictionary<string, SwaggerDocumentOperation>;
 
 /// <summary>
 /// Defines the detail of a single API operation on a path.
@@ -324,55 +344,55 @@ public class SwaggerDocumentOperation
     /// <summary>
     /// Gets or sets a list of tags for API documentation control.
     /// </summary>
-    [JsonProperty("tags", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("tags"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<string> Tags { get; set; } = new();
 
     /// <summary>
     /// Gets or sets a short summary of what the operation does.
     /// </summary>
-    [JsonProperty("summary", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("summary"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Summary { get; set; }
 
     /// <summary>
     /// Gets or sets a verbose explanation of the operation behavior.
     /// </summary>
-    [JsonProperty("description", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("description"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Description { get; set; }
 
     /// <summary>
     /// Gets or sets the unique string used to identify the operation.
     /// </summary>
-    [JsonProperty("operationId", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("operationId"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? OperationId { get; set; }
 
     /// <summary>
     /// Gets or sets a list of MIME types the APIs can produce.
     /// </summary>
-    [JsonProperty("produces", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("produces"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<string>? Produces { get; set; }
 
     /// <summary>
     /// Gets or sets a list of parameters that are applicable for this operation.
     /// </summary>
-    [JsonProperty("parameters", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("parameters"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<SwaggerDocumentProperty>? Parameters { get; set; }
 
     /// <summary>
     /// Gets or sets the list of possible responses as they are returned from executing this operation.
     /// </summary>
-    [JsonProperty("responses", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("responses"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public Dictionary<string, SwaggerDocumentProperty>? Responses { get; set; }
 
     /// <summary>
     /// Gets or sets the transfer protocol of the API.
     /// </summary>
-    [JsonProperty("schemes", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("schemes"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public List<string>? Schemes { get; set; }
 
     /// <summary>
     /// Gets or sets a value indicating whether this operation is deprecated.
     /// </summary>
-    [JsonProperty("deprecated", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("deprecated"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public bool Deprecated { get; set; }
 
     /// <summary>
@@ -381,53 +401,64 @@ public class SwaggerDocumentOperation
     [JsonIgnore]
     public Dictionary<string, SwaggerDocumentProperty>? AdditionalProperties { get; set; }
 
-    [JsonExtensionData] public Dictionary<string, JToken>? JTokenProperties { get; set; }
+    /// <summary>
+    /// Gets or sets the additional JSON properties that are not covered by the defined Swagger properties.
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? JTokenProperties { get; set; }
 
-    private static SwaggerDocumentProperty ToSwaggerDocumentProperty(JToken? jsonObject)
+    private static SwaggerDocumentProperty ToSwaggerDocumentProperty(JsonElement? jsonObject)
     {
         if (jsonObject == null)
         {
             return new SwaggerDocumentProperty();
         }
 
-        using StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
-        JsonTextWriter jw = new JsonTextWriter(sw);
-        jsonObject.WriteTo(jw);
-        var json = sw.ToString();
-        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, SwaggerDocumentJson.Settings) ?? new SwaggerDocumentProperty();
+        using var sw = new MemoryStream();
+        using var jw = new Utf8JsonWriter(sw);
+        jsonObject.Value.WriteTo(jw);
+        jw.Flush();
+        var json = Encoding.UTF8.GetString(sw.ToArray());
+        return JsonSerializer.Deserialize(json, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty) ??
+               new SwaggerDocumentProperty();
     }
 
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {
-        var objectTokens = this.JTokenProperties?.Where(x => x.Value is JObject).ToList();
-
-        if (objectTokens == null || !objectTokens.Any())
+        if (JTokenProperties == null)
         {
             return;
         }
 
-        this.AdditionalProperties = objectTokens.ToDictionary(
+        var objectTokens = JTokenProperties.ToList();
+
+        if (!objectTokens.Any())
+        {
+            return;
+        }
+
+        AdditionalProperties = objectTokens.ToDictionary(
             x => x.Key,
-            x => ToSwaggerDocumentProperty(x.Value as JObject));
+            x => ToSwaggerDocumentProperty(x.Value));
 
-        this.JTokenProperties.RemoveRange(objectTokens);
+        JTokenProperties.RemoveRange(objectTokens);
     }
-
 
     [OnSerializing]
     private void OnSerializing(StreamingContext context)
     {
-        var additionalProperties = this.AdditionalProperties?.ToDictionary(
+        var additionalProperties = AdditionalProperties?.ToDictionary(
             x => x.Key,
-            x => JToken.FromObject(x.Value));
+            x => JsonSerializer.SerializeToElement(x.Value, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty));
 
         if (additionalProperties == null)
         {
             return;
         }
 
-        this.JTokenProperties.AddRange(additionalProperties);
+        JTokenProperties ??= new();
+        JTokenProperties.AddRange(additionalProperties);
     }
 }
 
@@ -439,25 +470,25 @@ public class SwaggerDocumentProperty
     /// <summary>
     /// Gets or sets the reference string to a definition.
     /// </summary>
-    [JsonProperty("$ref", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("$ref"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public string? Reference { get; set; }
 
     /// <summary>
     /// Gets or sets a definition of the parameter structure.
     /// </summary>
-    [JsonProperty("schema", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("schema"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public SwaggerDocumentProperty? Schema { get; set; }
 
     /// <summary>
     /// Gets or sets the type of items in the array if the type is <b>array</b>.
     /// </summary>
-    [JsonProperty("items", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("items"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public SwaggerDocumentProperty? Items { get; set; }
 
     /// <summary>
     /// Gets or sets the properties of an item.
     /// </summary>
-    [JsonProperty("properties", NullValueHandling = NullValueHandling.Ignore)]
+    [JsonPropertyName("properties"), JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingDefault)]
     public Dictionary<string, SwaggerDocumentProperty>? Properties { get; set; }
 
     /// <summary>
@@ -466,52 +497,63 @@ public class SwaggerDocumentProperty
     [JsonIgnore]
     public Dictionary<string, SwaggerDocumentProperty>? AdditionalProperties { get; set; }
 
-    [JsonExtensionData] public Dictionary<string, JToken>? JTokenProperties { get; set; }
+    /// <summary>
+    /// Gets or sets the additional JSON properties that are not covered by the defined Swagger properties.
+    /// </summary>
+    [JsonExtensionData]
+    public Dictionary<string, JsonElement>? JTokenProperties { get; set; }
 
-    private static SwaggerDocumentProperty ToSwaggerDocumentProperty(JToken? jsonObject)
+    private static SwaggerDocumentProperty ToSwaggerDocumentProperty(JsonElement? jsonObject)
     {
         if (jsonObject == null)
         {
             return new SwaggerDocumentProperty();
         }
 
-        using StringWriter sw = new StringWriter(CultureInfo.InvariantCulture);
-        JsonTextWriter jw = new JsonTextWriter(sw);
-        jsonObject.WriteTo(jw);
-        var json = sw.ToString();
-        return JsonConvert.DeserializeObject<SwaggerDocumentProperty>(json, SwaggerDocumentJson.Settings) ??
+        using var sw = new MemoryStream();
+        using var jw = new Utf8JsonWriter(sw);
+        jsonObject.Value.WriteTo(jw);
+        jw.Flush();
+        var json = Encoding.UTF8.GetString(sw.ToArray());
+        return JsonSerializer.Deserialize(json, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty) ??
                new SwaggerDocumentProperty();
     }
 
     [OnDeserialized]
     private void OnDeserialized(StreamingContext context)
     {
-        var objectTokens = this.JTokenProperties?.Where(x => x.Value is JObject).ToList();
-
-        if (objectTokens == null || !objectTokens.Any())
+        if (JTokenProperties == null)
         {
             return;
         }
 
-        this.AdditionalProperties = objectTokens.ToDictionary(
-            x => x.Key,
-            x => ToSwaggerDocumentProperty(x.Value as JObject));
+        var objectTokens = JTokenProperties.ToList();
 
-        this.JTokenProperties.RemoveRange(objectTokens);
+        if (!objectTokens.Any())
+        {
+            return;
+        }
+
+        AdditionalProperties = objectTokens.ToDictionary(
+            x => x.Key,
+            x => ToSwaggerDocumentProperty(x.Value));
+
+        JTokenProperties.RemoveRange(objectTokens);
     }
 
     [OnSerializing]
     private void OnSerializing(StreamingContext context)
     {
-        var additionalProperties = this.AdditionalProperties?.ToDictionary(
+        var additionalProperties = AdditionalProperties?.ToDictionary(
             x => x.Key,
-            x => JToken.FromObject(x.Value));
+            x => JsonSerializer.SerializeToElement(x.Value, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty));
 
         if (additionalProperties == null)
         {
             return;
         }
 
-        this.JTokenProperties.AddRange(additionalProperties);
+        JTokenProperties ??= new();
+        JTokenProperties.AddRange(additionalProperties);
     }
 }

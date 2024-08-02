@@ -1,6 +1,7 @@
-namespace SwaggerMerge.Document;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
-using Newtonsoft.Json;
+namespace SwaggerMerge.Document;
 
 /// <summary>
 /// Defines the configuration for the Swagger document JSON files.
@@ -8,15 +9,14 @@ using Newtonsoft.Json;
 public class SwaggerDocumentJson
 {
     /// <summary>
-    /// Gets or sets the <see cref="JsonSerializerSettings"/> that are required for serializing and deserializing Swagger documents.
+    /// Gets or sets the <see cref="JsonSerializerOptions"/> that are required for serializing and deserializing Swagger documents.
     /// </summary>
     /// <remarks>
     /// The settings are used to ensure that the loaded and saved JSON files are in the original, correct format.
     /// </remarks>
-    public static readonly JsonSerializerSettings Settings = new()
+    public static readonly JsonSerializerOptions Settings = new()
     {
-        MetadataPropertyHandling = MetadataPropertyHandling.Ignore,
-        Formatting = Formatting.Indented,
-        NullValueHandling = NullValueHandling.Ignore,
+        WriteIndented = true,
+        DefaultIgnoreCondition = JsonIgnoreCondition.Always,
     };
 }

@@ -23,6 +23,11 @@ public partial class SwaggerMergeHandler : ISwaggerMergeHandler
         {
             var input = inputConfig.File;
 
+            if (input == null)
+            {
+                continue;
+            }
+
             outputTitle = UpdateOutputTitleFromInput(outputTitle, inputConfig, input);
             UpdateOutputPathsFromInput(output, inputConfig, input);
             UpdateOutputDefinitionsFromInput(output, input);
@@ -41,7 +46,7 @@ public partial class SwaggerMergeHandler : ISwaggerMergeHandler
         }
 
         // Where exclusions have been specified, remove any definitions from the output where they are no longer valid
-        if (config.Inputs.Any(x => x.Path is { OperationExclusions: { } } && x.Path.OperationExclusions.Any())
+        if (config.Inputs.Any(x => x.Path is { OperationExclusions: not null } && x.Path.OperationExclusions.Any())
             && output.Definitions != null)
         {
             output.Definitions = GetUsedDefinitions(output);

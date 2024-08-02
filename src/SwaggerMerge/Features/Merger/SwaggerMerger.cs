@@ -5,29 +5,19 @@ using Infrastructure.Configuration.Merge;
 using Serilog;
 using SwaggerMerge;
 
-internal class SwaggerMerger : ISwaggerMerger
+internal sealed class SwaggerMerger(
+    ISwaggerMergeConfigurationFileHandler configurationFileHandler,
+    ISwaggerMergeHandler mergeHandler,
+    ISwaggerDocumentHandler documentHandler)
+    : ISwaggerMerger
 {
-    private readonly ISwaggerMergeConfigurationFileHandler configurationFileHandler;
-    private readonly ISwaggerMergeHandler mergeHandler;
-    private readonly ISwaggerDocumentHandler documentHandler;
-
-    public SwaggerMerger(
-        ISwaggerMergeConfigurationFileHandler configurationFileHandler,
-        ISwaggerMergeHandler mergeHandler,
-        ISwaggerDocumentHandler documentHandler)
-    {
-        this.configurationFileHandler = configurationFileHandler;
-        this.mergeHandler = mergeHandler;
-        this.documentHandler = documentHandler;
-    }
-
     public async Task RunAsync(string configFilePath)
     {
         try
         {
             Log.Information("Loading configuration file from '{ConfigFilePath}'...", configFilePath);
-            var configFile = await this.configurationFileHandler.LoadAsync(configFilePath);
-            var result = this.configurationFileHandler.Validate(configFile);
+            var configFile = await configurationFileHandler.LoadAsync(configFilePath);
+            var result = configurationFileHandler.Validate(configFile);
 
             if (!result.IsValid)
             {
@@ -35,13 +25,13 @@ internal class SwaggerMerger : ISwaggerMerger
                 return;
             }
 
-            var config = await this.configurationFileHandler.ConvertAsync(configFile);
+            var config = await configurationFileHandler.ConvertAsync(configFile);
 
             Log.Information("Merging {InputsCount} Swagger documents...", config.Inputs.Count());
-            var output = this.mergeHandler.Merge(config);
+            var output = mergeHandler.Merge(config);
 
             Log.Information("Saving output Swagger document to '{OutputFilePath}'...", configFile.Output.File);
-            await this.documentHandler.SaveToPathAsync(output, configFile.Output.File);
+            await documentHandler.SaveToPathAsync(output, configFile.Output.File);
 
             Log.Information(
                 "Finished merging {InputsCount} Swagger documents to '{OutputFilePath}'!",

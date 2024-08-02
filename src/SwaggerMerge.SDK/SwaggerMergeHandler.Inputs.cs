@@ -1,8 +1,8 @@
 namespace SwaggerMerge;
 
+using Common.Extensions;
 using Configuration.Input;
 using Document;
-using MADE.Collections;
 
 /// <summary>
 /// Defines the handler logic for merging Swagger document inputs.
@@ -10,7 +10,7 @@ using MADE.Collections;
 public partial class SwaggerMergeHandler
 {
     private static void UpdateOutputPathsFromInput(
-        SwaggerDocument? output,
+        SwaggerDocument output,
         SwaggerInputConfiguration inputConfig,
         SwaggerDocument input)
     {
@@ -25,13 +25,15 @@ public partial class SwaggerMergeHandler
             return;
         }
 
+        output.Paths ??= new SwaggerDocumentPaths();
+
         foreach (var path in pathsToProcess)
         {
             var outputPath = path.Key;
 
             outputPath = StripStartFromPath(outputPath, inputConfig);
             outputPath = PrependToPath(outputPath, inputConfig);
-            output?.Paths.AddOrUpdate(outputPath, path.Value);
+            output.Paths.AddOrUpdate(outputPath, path.Value);
         }
     }
 
@@ -90,20 +92,21 @@ public partial class SwaggerMergeHandler
             var path = inputPath.Key;
             var pathOperations = inputPath.Value;
 
-            if (inputConfig.Path is not { OperationExclusions: { } } || !inputConfig.Path.OperationExclusions.Any())
+            if (inputConfig.Path is not { OperationExclusions: not null } ||
+                !inputConfig.Path.OperationExclusions.Any())
             {
                 continue;
             }
 
             foreach (var method in from pathOperation in pathOperations
-                     let method = pathOperation.Key
-                     let operation = pathOperation.Value
-                     from exclusion in inputConfig.Path.OperationExclusions.Where(
-                         pathOperationExclusion => operation.JTokenProperties != null &&
-                                                   operation.JTokenProperties.ContainsKey(pathOperationExclusion.Key) &&
-                                                   operation.JTokenProperties[pathOperationExclusion.Key]
-                                                       .Equals(pathOperationExclusion.Value))
-                     select method)
+                                   let method = pathOperation.Key
+                                   let operation = pathOperation.Value
+                                   from exclusion in inputConfig.Path.OperationExclusions.Where(
+                                       pathOperationExclusion => operation.JTokenProperties != null &&
+                                                                 operation.JTokenProperties.ContainsKey(pathOperationExclusion.Key) &&
+                                                                 operation.JTokenProperties[pathOperationExclusion.Key]
+                                                                     .Equals(pathOperationExclusion.Value))
+                                   select method)
             {
                 pathOperations.Remove(method);
             }
@@ -125,7 +128,7 @@ public partial class SwaggerMergeHandler
     {
         if (inputConfig.Path?.StripStart != null && !string.IsNullOrWhiteSpace(inputConfig.Path.StripStart))
         {
-            path = path.Substring(inputConfig.Path.StripStart.Length);
+            path = path[inputConfig.Path.StripStart.Length..];
         }
 
         return path;

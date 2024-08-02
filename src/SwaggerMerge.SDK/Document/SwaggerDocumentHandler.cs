@@ -1,7 +1,7 @@
 namespace SwaggerMerge.Document;
 
 using System.Text;
-using Newtonsoft.Json;
+using System.Text.Json;
 
 /// <summary>
 /// Defines an implementation for handling <see cref="SwaggerDocument"/> objects.
@@ -26,14 +26,10 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
     /// <returns>A <see cref="SwaggerDocument"/> representing the JSON content.</returns>
     public SwaggerDocument LoadFromJson(string swaggerJson)
     {
-        var deserializedContent = JsonConvert.DeserializeObject<SwaggerDocument>(swaggerJson, SwaggerDocumentJson.Settings);
-        if (deserializedContent == null)
-        {
-            throw new InvalidOperationException(
-                "The Swagger document JSON could not be loaded correctly as the format is not as expected.");
-        }
-
-        return deserializedContent;
+        var deserializedContent =
+            JsonSerializer.Deserialize(swaggerJson, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument);
+        return deserializedContent ?? throw new InvalidOperationException(
+            "The Swagger document JSON could not be loaded correctly as the format is not as expected.");
     }
 
     /// <summary>
@@ -44,7 +40,7 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
     /// <returns>An asynchronous operation.</returns>
     public async Task SaveToPathAsync(SwaggerDocument document, string filePath)
     {
-        var swaggerJson = JsonConvert.SerializeObject(document, SwaggerDocumentJson.Settings);
+        var swaggerJson = JsonSerializer.Serialize(document, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument);
         await WriteAllTextAsync(swaggerJson, filePath);
     }
 
@@ -56,7 +52,7 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
 
     private static async Task WriteAllTextAsync(string content, string filePath)
     {
-        using var stream = new StreamWriter(filePath, false, Encoding.UTF8);
+        await using var stream = new StreamWriter(filePath, false, Encoding.UTF8);
         await stream.WriteAsync(content);
     }
 }

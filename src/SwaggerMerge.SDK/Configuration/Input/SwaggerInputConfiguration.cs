@@ -10,7 +10,7 @@ public class SwaggerInputConfiguration
     /// <summary>
     /// Gets or sets the Swagger document.
     /// </summary>
-    public SwaggerDocument File { get; set; }
+    public SwaggerDocument? File { get; set; }
 
     /// <summary>
     /// Gets or sets the configuration for modifying the document's paths.

@@ -1,7 +1,7 @@
 namespace SwaggerMerge;
 
 using Document;
-using MADE.Collections;
+using Common.Extensions;
 
 /// <summary>
 /// Defines the handler logic for merging Swagger document definitions.
@@ -54,18 +54,17 @@ public partial class SwaggerMergeHandler
                 pathDefinitions.Add(d.Key, d.Value);
             }
 
-            // If we do have them, lets have a look for that definitions definitions
+            // If we do have them, lets have a look for that definition's definitions
             if (definitionDefinitions.Any())
             {
                 PopulateDefinitionDefinitions(pathDefinitions, definitionDefinitions, document);
             }
         }
-
     }
 
     private static SwaggerDocumentDefinitions GetDocumentPathDefinitions(SwaggerDocument document)
     {
-        SwaggerDocumentDefinitions definitions = new SwaggerDocumentDefinitions();
+        var definitions = new SwaggerDocumentDefinitions();
 
         var definedPathReferences = new List<string>();
 
