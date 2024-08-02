@@ -27,6 +27,7 @@ jobs:
         os: [windows-latest, ubuntu-latest]
 
     env:
+      BUILD_CONFIG: "Release"
       PROJECT: "./src/SwaggerMerge.SDK/SwaggerMerge.SDK.csproj"
 
     runs-on: ${{ matrix.os }}
@@ -53,11 +54,11 @@ jobs:
             8.0.x
 
       - name: Restore dependencies
-        run: dotnet restore $PROJECT
+        run: dotnet restore ${{ env.PROJECT }}
 
       - name: Build SDK
-        run: dotnet build $PROJECT --configuration "Release" -p:Version=$BUILD_VERSION --no-restore
+        run: dotnet build ${{ env.PROJECT }} --configuration ${{ env.BUILD_CONFIG }} -p:Version=${{ env.BUILD_VERSION }} --no-restore
 
       - name: Publish
         if: startsWith(github.ref, 'refs/tags/v')
-        run: nuget push **\*.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{secrets.NUGET_API_KEY}}
+        run: nuget push **\*.nupkg -Source 'https://api.nuget.org/v3/index.json' -ApiKey ${{ secrets.NUGET_API_KEY }}
