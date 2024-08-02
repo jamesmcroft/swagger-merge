@@ -18,7 +18,13 @@ internal sealed class SwaggerMergeHandlerAotTest
 
         var d = merger.Merge(GetSwaggerMergeConfiguration());
 
+        // Save the merged document to a file for manual inspection
+        File.WriteAllText("Documents/merged.swagger.json", JsonSerializer.Serialize(d, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument));
+
         Assert(d.Info is { Title: "Swagger Merged" }, "Title was not set.");
+        Assert(d.Info is { Version: "1.0.0" }, "Version was not set.");
+        Assert(d.Host == "localhost", "Host was not set.");
+        Assert(d.BasePath == "/api/", "BasePath was not set.");
         Assert(d.Paths is { Count: > 0 }, "No paths were merged.");
     }
 
@@ -35,8 +41,9 @@ internal sealed class SwaggerMergeHandlerAotTest
             Inputs = documents.Select(d => new SwaggerInputConfiguration { File = d }),
             Output = new SwaggerOutputConfiguration
             {
-                Info = new SwaggerOutputInfoConfiguration { Title = "Swagger Merged" },
-                Host = "localhost"
+                Info = new SwaggerOutputInfoConfiguration { Title = "Swagger Merged", Version = "1.0.0" },
+                Host = "localhost",
+                BasePath = "/api/"
             }
         };
     }

@@ -22,6 +22,9 @@
     <None Update="Documents\store.swagger.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
+    <None Update="Documents\todo.swagger.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
     <None Update="Documents\user.swagger.json">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
