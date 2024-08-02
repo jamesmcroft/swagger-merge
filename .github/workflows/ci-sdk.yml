@@ -2,6 +2,8 @@ name: CI - SDK
 
 on:
   push:
+    tags:
+      - v*
     branches:
       - main
     paths:
