@@ -1,9 +1,9 @@
 namespace SwaggerMerge.Infrastructure.Configuration.Merge;
 
 using System.Text;
+using System.Text.Json;
 using Document;
 using Exceptions;
-using Newtonsoft.Json;
 using SwaggerMerge.Configuration;
 using SwaggerMerge.Configuration.Input;
 
@@ -13,7 +13,7 @@ internal sealed class SwaggerMergeConfigurationFileHandler(ISwaggerDocumentHandl
     public async Task<SwaggerMergeConfigurationFile> LoadAsync(string configFilePath)
     {
         var content = await ReadAllTextAsync(configFilePath);
-        var config = JsonConvert.DeserializeObject<SwaggerMergeConfigurationFile>(content) ??
+        var config = JsonSerializer.Deserialize<SwaggerMergeConfigurationFile>(content) ??
                      throw new SwaggerMergeException(
                          $"The Swagger merge configuration file at '{configFilePath}' could not be loaded correctly as it is not in the correct format.");
 

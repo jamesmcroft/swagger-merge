@@ -1,5 +1,5 @@
 using System.Diagnostics.CodeAnalysis;
-using Newtonsoft.Json;
+using System.Text.Json;
 using SwaggerMerge.Configuration;
 using SwaggerMerge.Configuration.Input;
 using SwaggerMerge.Configuration.Output;
@@ -7,7 +7,7 @@ using SwaggerMerge.Document;
 
 namespace SwaggerMerge.AotCompatibility.TestApp;
 
-internal class SwaggerMergeHandlerAotTest
+internal sealed class SwaggerMergeHandlerAotTest
 {
     [UnconditionalSuppressMessage("", "IL2026", Justification = "Property presence guaranteed by explicit hints.")]
     public static void Test()
@@ -26,7 +26,7 @@ internal class SwaggerMergeHandlerAotTest
     {
         var documents = Directory.EnumerateFiles("Documents", "*.swagger.json")
             .Select(File.ReadAllText)
-            .Select(JsonConvert.DeserializeObject<SwaggerDocument>)
+            .Select(x => JsonSerializer.Deserialize(x, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument))
             .OfType<SwaggerDocument>()
             .ToList();
 
