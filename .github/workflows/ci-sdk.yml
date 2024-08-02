@@ -56,6 +56,11 @@ jobs:
       - name: Restore dependencies
         run: dotnet restore $PROJECT
 
+      - name: Print environment variables
+        run: |
+          echo "BUILD_CONFIG: ${{ env.BUILD_CONFIG }}"
+          echo "BUILD_VERSION: ${{ env.BUILD_VERSION }}"
+
       - name: Build SDK
         run: dotnet build $PROJECT /p:Configuration=$env:BUILD_CONFIG /p:Platform="Any CPU" /p:Version=$BUILD_VERSION
 
