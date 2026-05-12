@@ -1,16 +1,16 @@
 namespace SwaggerMerge.Document;
 
-using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using System.Text.Json;
-using System.Text.Json.Nodes;
-using YamlDotNet.Serialization;
 
 /// <summary>
 /// Defines an implementation for handling <see cref="SwaggerDocument"/> objects.
+/// Delegates serialization to format-specific <see cref="IDocumentFormatHandler"/> implementations.
 /// </summary>
 public class SwaggerDocumentHandler : ISwaggerDocumentHandler
 {
+    private readonly IDocumentFormatHandler _jsonHandler = new JsonDocumentFormatHandler();
+    private readonly IDocumentFormatHandler _yamlHandler = new YamlDocumentFormatHandler();
+
     /// <summary>
     /// Loads a <see cref="SwaggerDocument"/> from the specified path, auto-detecting format from the file extension.
     /// </summary>
@@ -20,7 +20,7 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
     {
         var content = await ReadAllTextAsync(filePath);
         var format = ISwaggerDocumentHandler.DetectFormat(filePath, content);
-        return format == DocumentFormat.Yaml ? this.LoadFromYaml(content) : this.LoadFromJson(content);
+        return GetHandler(format).Deserialize(content);
     }
 
     /// <summary>
@@ -30,10 +30,7 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
     /// <returns>A <see cref="SwaggerDocument"/> representing the JSON content.</returns>
     public SwaggerDocument LoadFromJson(string swaggerJson)
     {
-        var deserializedContent =
-            JsonSerializer.Deserialize(swaggerJson, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument);
-        return deserializedContent ?? throw new InvalidOperationException(
-            "The Swagger document JSON could not be loaded correctly as the format is not as expected.");
+        return _jsonHandler.Deserialize(swaggerJson);
     }
 
     /// <summary>
@@ -43,8 +40,7 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
     /// <returns>A <see cref="SwaggerDocument"/> representing the YAML content.</returns>
     public SwaggerDocument LoadFromYaml(string swaggerYaml)
     {
-        var json = ConvertYamlToJson(swaggerYaml);
-        return this.LoadFromJson(json);
+        return _yamlHandler.Deserialize(swaggerYaml);
     }
 
     /// <summary>
@@ -68,62 +64,12 @@ public class SwaggerDocumentHandler : ISwaggerDocumentHandler
     /// <returns>An asynchronous operation.</returns>
     public async Task SaveToPathAsync(SwaggerDocument document, string filePath, DocumentFormat format)
     {
-        var json = JsonSerializer.Serialize(document, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument);
-
-        if (format == DocumentFormat.Yaml)
-        {
-            var yaml = ConvertJsonToYaml(json);
-            await WriteAllTextAsync(yaml, filePath);
-        }
-        else
-        {
-            await WriteAllTextAsync(json, filePath);
-        }
+        var content = GetHandler(format).Serialize(document);
+        await WriteAllTextAsync(content, filePath);
     }
 
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "YamlDotNet reflection builders are used only as an intermediary YAML<->JSON converter. The actual document model uses AOT-compatible System.Text.Json source generation.")]
-    private static string ConvertYamlToJson(string yaml)
-    {
-        var deserializer = new DeserializerBuilder().Build();
-        var yamlObject = deserializer.Deserialize<object>(yaml);
-        var serializer = new SerializerBuilder()
-            .JsonCompatible()
-            .Build();
-        return serializer.Serialize(yamlObject);
-    }
-
-    [UnconditionalSuppressMessage("AOT", "IL3050", Justification = "YamlDotNet reflection builders are used only as an intermediary JSON->YAML converter. The actual document model uses AOT-compatible System.Text.Json source generation.")]
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "JsonNode deserialization does not require type metadata.")]
-    private static string ConvertJsonToYaml(string json)
-    {
-        var jsonNode = JsonNode.Parse(json);
-        var nativeObject = ConvertJsonNodeToNative(jsonNode);
-        var serializer = new SerializerBuilder()
-            .ConfigureDefaultValuesHandling(DefaultValuesHandling.OmitNull)
-            .Build();
-        return serializer.Serialize(nativeObject!);
-    }
-
-    private static object? ConvertJsonNodeToNative(JsonNode? node)
-    {
-        return node switch
-        {
-            JsonObject obj => obj.ToDictionary(kvp => kvp.Key, kvp => ConvertJsonNodeToNative(kvp.Value)),
-            JsonArray arr => arr.Select(ConvertJsonNodeToNative).ToList(),
-            JsonValue val => ConvertJsonValueToNative(val),
-            null => null,
-            _ => node.ToString()
-        };
-    }
-
-    private static object? ConvertJsonValueToNative(JsonValue value)
-    {
-        if (value.TryGetValue<bool>(out var boolVal)) return boolVal;
-        if (value.TryGetValue<long>(out var longVal)) return longVal;
-        if (value.TryGetValue<double>(out var doubleVal)) return doubleVal;
-        if (value.TryGetValue<string>(out var strVal)) return strVal;
-        return value.ToString();
-    }
+    private IDocumentFormatHandler GetHandler(DocumentFormat format) =>
+        format == DocumentFormat.Yaml ? _yamlHandler : _jsonHandler;
 
     private static async Task<string> ReadAllTextAsync(string filePath)
     {
