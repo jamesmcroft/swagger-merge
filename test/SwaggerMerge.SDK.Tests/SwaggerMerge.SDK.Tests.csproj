@@ -28,6 +28,8 @@
 
   <ItemGroup>
     <Content Include="Documents\**\*.json" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Documents\**\*.yaml" CopyToOutputDirectory="PreserveNewest" />
+    <Content Include="Documents\**\*.yml" CopyToOutputDirectory="PreserveNewest" />
   </ItemGroup>
 
 </Project>

@@ -26,6 +26,32 @@ internal sealed class SwaggerMergeHandlerAotTest
         Assert(d.Host == "localhost", "Host was not set.");
         Assert(d.BasePath == "/api/", "BasePath was not set.");
         Assert(d.Paths is { Count: > 0 }, "No paths were merged.");
+
+        TestYamlRoundTrip();
+    }
+
+    [UnconditionalSuppressMessage("", "IL2026", Justification = "YAML conversion uses untyped intermediary objects only.")]
+    private static void TestYamlRoundTrip()
+    {
+        var handler = new SwaggerDocumentHandler();
+
+        // Load from YAML
+        var yamlContent = File.ReadAllText("Documents/pet.swagger.yaml");
+        var docFromYaml = handler.LoadFromYaml(yamlContent);
+        Assert(docFromYaml.SwaggerVersion == "2.0", "YAML load: swagger version was not 2.0.");
+        Assert(docFromYaml.Paths is { Count: > 0 }, "YAML load: no paths were loaded.");
+
+        // Save as YAML and reload
+        handler.SaveToPathAsync(docFromYaml, "Documents/pet.roundtrip.yaml", DocumentFormat.Yaml).GetAwaiter().GetResult();
+        var reloaded = handler.LoadFromFilePathAsync("Documents/pet.roundtrip.yaml").GetAwaiter().GetResult();
+        Assert(reloaded.SwaggerVersion == "2.0", "YAML round-trip: swagger version was not 2.0.");
+        Assert(reloaded.Paths is { Count: > 0 }, "YAML round-trip: no paths after reload.");
+        Assert(reloaded.Info.Title == docFromYaml.Info.Title, "YAML round-trip: title mismatch.");
+
+        // Cross-format: save YAML-loaded doc as JSON, reload
+        handler.SaveToPathAsync(docFromYaml, "Documents/pet.fromyaml.json", DocumentFormat.Json).GetAwaiter().GetResult();
+        var jsonReloaded = handler.LoadFromFilePathAsync("Documents/pet.fromyaml.json").GetAwaiter().GetResult();
+        Assert(jsonReloaded.Paths is { Count: > 0 }, "Cross-format: no paths after YAML-to-JSON round-trip.");
     }
 
     private static SwaggerMergeConfiguration GetSwaggerMergeConfiguration()
