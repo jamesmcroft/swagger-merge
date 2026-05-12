@@ -1,6 +1,7 @@
 namespace SwaggerMerge.SDK.Tests;
 
-using SwaggerMerge.Document;
+using SwaggerMerge.Common.Document;
+using SwaggerMerge.V2.Document;
 using Xunit;
 
 public class DocumentFormatDetectionTests

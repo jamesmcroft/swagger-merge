@@ -1,13 +1,13 @@
 # Swagger Merge CLI tool
 
 [![GitHub release](https://img.shields.io/github/release/jamesmcroft/swagger-merge.svg)](https://github.com/jamesmcroft/swagger-merge/releases)
-[![Build status](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci-sdk.yml/badge.svg?branch=main)](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci-sdk.yml)
+[![Build status](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci.yml)
 [![.NET Tool](https://img.shields.io/nuget/v/SwaggerMerge?label=dotnet%20tool)](https://www.nuget.org/packages/SwaggerMerge/)
 [![SDK](https://img.shields.io/nuget/v/SwaggerMerge.SDK?label=sdk)](https://www.nuget.org/packages/SwaggerMerge.SDK/)
 
 The Swagger Merge CLI tool allows you to process the merging of multiple Swagger files into a single Swagger file. This is useful for bringing together the API layer of a distributed service architecture where you wish to expose the APIs via a single API gateway.
 
-The CLI tool currently supports merging Swagger V2 specification JSON files. It is not yet capable of merging Swagger V3 specification JSON or YAML files.
+The CLI tool supports merging Swagger V2 specification files in **JSON and YAML** formats. Input and output formats are auto-detected based on file extension. OpenAPI V3 CLI support is planned for a future release.
 
 This tool uses the Swagger Merge SDK which is available as [a NuGet package for you to use in your own applications for merging Swagger files](https://www.nuget.org/packages/SwaggerMerge.SDK/).
 
@@ -27,7 +27,7 @@ dotnet tool update -g SwaggerMerge
 
 ### Configure your Swagger document merge
 
-To use the CLI tool, you will need access to all of your Swagger v2 JSON input files, and you will need to create a configuration JSON file that will be used by the CLI tool to determine how to merge the input files together.
+To use the CLI tool, you will need access to all of your Swagger V2 input files (JSON or YAML), and you will need to create a configuration JSON file that will be used by the CLI tool to determine how to merge the input files together.
 
 Here's an example of the format for this configuration file.
 

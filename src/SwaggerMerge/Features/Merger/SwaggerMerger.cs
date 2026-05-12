@@ -1,9 +1,9 @@
 namespace SwaggerMerge.Features.Merger;
 
-using Document;
+using SwaggerMerge.V2.Document;
 using Infrastructure.Configuration.Merge;
 using Serilog;
-using SwaggerMerge;
+using SwaggerMerge.V2;
 
 internal sealed class SwaggerMerger(
     ISwaggerMergeConfigurationFileHandler configurationFileHandler,

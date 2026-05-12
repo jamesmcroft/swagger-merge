@@ -1,6 +1,6 @@
 namespace SwaggerMerge.Infrastructure.Configuration.Merge;
 
-using SwaggerMerge.Configuration;
+using SwaggerMerge.V2.Configuration;
 
 internal interface ISwaggerMergeConfigurationFileHandler
 {

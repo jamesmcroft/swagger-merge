@@ -1,13 +1,17 @@
 # Swagger Merge
 
 [![GitHub release](https://img.shields.io/github/release/jamesmcroft/swagger-merge.svg)](https://github.com/jamesmcroft/swagger-merge/releases)
-[![Build status](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci-sdk.yml/badge.svg?branch=main)](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci-sdk.yml)
+[![Build status](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/jamesmcroft/swagger-merge/actions/workflows/ci.yml)
 [![.NET Tool](https://img.shields.io/nuget/v/SwaggerMerge?label=dotnet%20tool)](https://www.nuget.org/packages/SwaggerMerge/)
 [![SDK](https://img.shields.io/nuget/v/SwaggerMerge.SDK?label=sdk)](https://www.nuget.org/packages/SwaggerMerge.SDK/)
 
 The Swagger Merge SDK & CLI tool allows you to process the merging of multiple Swagger files into a single Swagger file. This is useful for bringing together the API layer of a distributed service architecture where you wish to expose the APIs via a single API gateway.
 
-The CLI tool currently supports merging Swagger V2 specification JSON files. It is not yet capable of merging Swagger V3 specification JSON or YAML files.
+The **SDK** supports merging both Swagger V2 and OpenAPI V3 specification files in JSON and YAML formats.
+
+The **CLI tool** currently supports merging Swagger V2 specification files in JSON and YAML formats. OpenAPI V3 CLI support is planned for a future release.
+
+> **Upgrading from v0.4.x?** See the [migration guide](docs/migration-v0.4-to-v1.0.md) for details on breaking changes and new namespace structure.
 
 ## Getting started
 

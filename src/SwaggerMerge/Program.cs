@@ -1,7 +1,7 @@
 namespace SwaggerMerge;
 
 using CommandLine;
-using Document;
+using SwaggerMerge.V2.Document;
 using Features.Merger;
 using Infrastructure.Configuration;
 using Infrastructure.Configuration.Logging;
@@ -42,9 +42,9 @@ public class Program
             .ConfigureServices((_, services) =>
             {
                 services.AddLogging();
-                services.AddTransient<ISwaggerDocumentHandler, SwaggerDocumentHandler>();
+                services.AddTransient<SwaggerMerge.V2.Document.ISwaggerDocumentHandler, SwaggerMerge.V2.Document.SwaggerDocumentHandler>();
                 services.AddTransient<ISwaggerMergeConfigurationFileHandler, SwaggerMergeConfigurationFileHandler>();
-                services.AddTransient<ISwaggerMergeHandler, SwaggerMergeHandler>();
+                services.AddTransient<SwaggerMerge.V2.ISwaggerMergeHandler, SwaggerMerge.V2.SwaggerMergeHandler>();
                 services.AddTransient<ISwaggerMerger, SwaggerMerger>();
             });
 

@@ -1,9 +1,11 @@
 namespace SwaggerMerge.SDK.Tests;
 
-using SwaggerMerge.Configuration;
-using SwaggerMerge.Configuration.Input;
-using SwaggerMerge.Configuration.Output;
-using SwaggerMerge.Document;
+using SwaggerMerge.Common.Configuration.Input;
+using SwaggerMerge.V2;
+using SwaggerMerge.V2.Configuration;
+using SwaggerMerge.V2.Configuration.Input;
+using SwaggerMerge.V2.Configuration.Output;
+using SwaggerMerge.V2.Document;
 using Xunit;
 
 public class SwaggerMergeHandlerTests
@@ -59,7 +61,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = store,
-                    Info = new SwaggerInputInfoConfiguration { Append = true, Title = "+ Store" }
+                    Info = new InputInfoConfiguration { Append = true, Title = "+ Store" }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -88,7 +90,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = store,
-                    Info = new SwaggerInputInfoConfiguration { Append = true }
+                    Info = new InputInfoConfiguration { Append = true }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -115,7 +117,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = store,
-                    Path = new SwaggerInputPathConfiguration { StripStart = "/store" }
+                    Path = new InputPathConfiguration { StripStart = "/store" }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -144,7 +146,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = todo,
-                    Path = new SwaggerInputPathConfiguration { Prepend = "/api" }
+                    Path = new InputPathConfiguration { Prepend = "/api" }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -174,7 +176,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = store,
-                    Path = new SwaggerInputPathConfiguration { StripStart = "/store", Prepend = "/api/v2" }
+                    Path = new InputPathConfiguration { StripStart = "/store", Prepend = "/api/v2" }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -317,4 +319,134 @@ public class SwaggerMergeHandlerTests
         Assert.Contains("/pet", result.Paths.Keys);
         Assert.Contains("/store/inventory", result.Paths.Keys);
     }
+
+    // --- Extension Property Merge Tests ---
+
+    [Fact]
+    public void Merge_PreservesExtensionPropertiesOnOperations()
+    {
+        var handler = new SwaggerDocumentHandler();
+        // Use object-valued extensions to avoid crash in JsonElementToSwaggerDocumentProperty
+        // which cannot deserialize primitive JsonElement values as SwaggerDocumentProperty.
+        var json = """
+        {
+          "swagger": "2.0",
+          "info": { "title": "Ext Test", "version": "1.0" },
+          "host": "localhost",
+          "paths": {
+            "/items": {
+              "get": {
+                "summary": "List items",
+                "operationId": "listItems",
+                "x-metadata": { "description": "internal-only" },
+                "responses": {
+                  "200": { "description": "OK" }
+                }
+              },
+              "post": {
+                "summary": "Create item",
+                "operationId": "createItem",
+                "x-metadata": { "description": "public" },
+                "responses": {
+                  "201": { "description": "Created" }
+                }
+              }
+            }
+          }
+        }
+        """;
+
+        var doc = handler.LoadFromJson(json);
+
+        var config = new SwaggerMergeConfiguration
+        {
+            Inputs = new[]
+            {
+                new SwaggerInputConfiguration { File = doc }
+            },
+            Output = new SwaggerOutputConfiguration
+            {
+                Info = new SwaggerOutputInfoConfiguration { Title = "Merged", Version = "1.0" },
+                Host = "localhost"
+            }
+        };
+
+        var result = _handler.Merge(config);
+
+        Assert.NotNull(result.Paths);
+        Assert.Contains("/items", result.Paths.Keys);
+
+        var getOp = result.Paths["/items"]["get"];
+        Assert.NotNull(getOp.JTokenProperties);
+        Assert.True(getOp.JTokenProperties.ContainsKey("x-metadata"));
+        Assert.Equal("internal-only", getOp.JTokenProperties["x-metadata"].GetProperty("description").GetString());
+
+        var postOp = result.Paths["/items"]["post"];
+        Assert.NotNull(postOp.JTokenProperties);
+        Assert.True(postOp.JTokenProperties.ContainsKey("x-metadata"));
+        Assert.Equal("public", postOp.JTokenProperties["x-metadata"].GetProperty("description").GetString());
+    }
+
+    [Fact]
+    public void Merge_WithOperationExclusion_ExcludesMatchingOperations()
+    {
+        var handler = new SwaggerDocumentHandler();
+        var json = """
+        {
+          "swagger": "2.0",
+          "info": { "title": "Exclusion Test", "version": "1.0" },
+          "host": "localhost",
+          "paths": {
+            "/public": {
+              "get": {
+                "summary": "Public endpoint",
+                "operationId": "getPublic",
+                "x-internal": false,
+                "responses": { "200": { "description": "OK" } }
+              }
+            },
+            "/internal": {
+              "get": {
+                "summary": "Internal endpoint",
+                "operationId": "getInternal",
+                "x-internal": true,
+                "responses": { "200": { "description": "OK" } }
+              }
+            }
+          }
+        }
+        """;
+
+        var doc = handler.LoadFromJson(json);
+
+        var exclusion = new InputPathOperationExclusionConfiguration();
+        exclusion.Add("x-internal", System.Text.Json.JsonSerializer.SerializeToElement(true));
+
+        var config = new SwaggerMergeConfiguration
+        {
+            Inputs = new[]
+            {
+                new SwaggerInputConfiguration
+                {
+                    File = doc,
+                    Path = new InputPathConfiguration
+                    {
+                        OperationExclusions = exclusion
+                    }
+                }
+            },
+            Output = new SwaggerOutputConfiguration
+            {
+                Info = new SwaggerOutputInfoConfiguration { Title = "Filtered", Version = "1.0" },
+                Host = "localhost"
+            }
+        };
+
+        var result = _handler.Merge(config);
+
+        Assert.NotNull(result.Paths);
+        Assert.Contains("/public", result.Paths.Keys);
+        Assert.DoesNotContain("/internal", result.Paths.Keys);
+    }
+
 }

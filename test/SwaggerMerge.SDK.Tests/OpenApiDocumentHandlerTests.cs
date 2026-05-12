@@ -1,8 +1,8 @@
 namespace SwaggerMerge.SDK.Tests;
 
 using System.Text.Json;
-using SwaggerMerge.Document;
-using SwaggerMerge.Document.V3;
+using SwaggerMerge.Common.Document;
+using SwaggerMerge.V3.Document;
 using Xunit;
 
 public class OpenApiDocumentHandlerTests
@@ -262,5 +262,57 @@ public class OpenApiDocumentHandlerTests
     {
         var version = SpecVersionDetector.DetectVersion("openapi: '3.0.3'\ninfo:\n  title: test");
         Assert.Equal(SpecVersion.OpenApiV3, version);
+    }
+
+    // --- Extension Property Tests ---
+
+    [Fact]
+    public void JsonRoundTrip_ExtensionProperties_SurviveRoundTrip()
+    {
+        var json = """
+        {
+          "openapi": "3.0.3",
+          "info": { "title": "Test", "version": "1.0" },
+          "paths": {
+            "/test": {
+              "get": {
+                "summary": "Test op",
+                "operationId": "testOp",
+                "x-internal": true,
+                "x-api-id": "op-456",
+                "responses": {
+                  "200": { "description": "OK" }
+                }
+              }
+            }
+          },
+          "x-api-gateway": "azure"
+        }
+        """;
+
+        var document = _jsonHandler.Deserialize(json);
+
+        Assert.NotNull(document.JTokenProperties);
+        Assert.True(document.JTokenProperties.ContainsKey("x-api-gateway"));
+        Assert.Equal("azure", document.JTokenProperties["x-api-gateway"].GetString());
+
+        var getOp = document.Paths!["/test"]["get"];
+        Assert.NotNull(getOp.JTokenProperties);
+        Assert.True(getOp.JTokenProperties.ContainsKey("x-internal"));
+        Assert.True(getOp.JTokenProperties["x-internal"].GetBoolean());
+        Assert.Equal("op-456", getOp.JTokenProperties["x-api-id"].GetString());
+
+        var reserialized = _jsonHandler.Serialize(document);
+        var roundTripped = _jsonHandler.Deserialize(reserialized);
+
+        Assert.NotNull(roundTripped.JTokenProperties);
+        Assert.True(roundTripped.JTokenProperties.ContainsKey("x-api-gateway"));
+        Assert.Equal("azure", roundTripped.JTokenProperties["x-api-gateway"].GetString());
+
+        var rtOp = roundTripped.Paths!["/test"]["get"];
+        Assert.NotNull(rtOp.JTokenProperties);
+        Assert.True(rtOp.JTokenProperties.ContainsKey("x-internal"));
+        Assert.True(rtOp.JTokenProperties["x-internal"].GetBoolean());
+        Assert.Equal("op-456", rtOp.JTokenProperties["x-api-id"].GetString());
     }
 }

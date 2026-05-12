@@ -1,7 +1,8 @@
-namespace SwaggerMerge.Infrastructure.Configuration.Merge.Input;
+namespace SwaggerMerge.V2.Configuration.Input;
 
 using SwaggerMerge.Common.Configuration.Input;
-using SwaggerMerge.V2.Configuration.Input;
+
+using SwaggerMerge.V2.Document;
 
 /// <summary>
 /// Defines the configuration for a Swagger document input.
@@ -9,9 +10,9 @@ using SwaggerMerge.V2.Configuration.Input;
 public class SwaggerInputConfiguration
 {
     /// <summary>
-    /// Gets or sets the file path to the Swagger document.
+    /// Gets or sets the Swagger document.
     /// </summary>
-    public string File { get; set; } = string.Empty;
+    public SwaggerDocument? File { get; set; }
 
     /// <summary>
     /// Gets or sets the configuration for modifying the document's paths.
