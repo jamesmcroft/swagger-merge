@@ -48,9 +48,13 @@ public partial class OpenApiMergeHandler : IOpenApiMergeHandler
             return current;
         }
 
-        return string.Compare(candidate, current, StringComparison.Ordinal) > 0
-            ? candidate
-            : current;
+        if (Version.TryParse(candidate, out var candidateVersion) &&
+            Version.TryParse(current, out var currentVersion))
+        {
+            return candidateVersion > currentVersion ? candidate : current;
+        }
+
+        return current;
     }
 
     private static void FinalizeOutput(

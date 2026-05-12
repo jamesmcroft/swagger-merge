@@ -89,7 +89,7 @@ public partial class OpenApiMergeHandler
 
         var documentPaths = input.Paths;
 
-        foreach (var inputPath in input.Paths)
+        foreach (var inputPath in input.Paths.ToList())
         {
             var path = inputPath.Key;
             var pathOperations = inputPath.Value;
@@ -100,7 +100,7 @@ public partial class OpenApiMergeHandler
                 continue;
             }
 
-            foreach (var method in from pathOperation in pathOperations
+            var methodsToRemove = (from pathOperation in pathOperations.ToList()
                                    let method = pathOperation.Key
                                    let operation = pathOperation.Value
                                    from exclusion in inputConfig.Path.OperationExclusions.Where(
@@ -108,7 +108,9 @@ public partial class OpenApiMergeHandler
                                                                  operation.JTokenProperties.ContainsKey(pathOperationExclusion.Key) &&
                                                                  operation.JTokenProperties[pathOperationExclusion.Key]
                                                                      .GetRawText() == pathOperationExclusion.Value.GetRawText())
-                                   select method)
+                                   select method).ToList();
+
+            foreach (var method in methodsToRemove)
             {
                 pathOperations.Remove(method);
             }
@@ -128,7 +130,8 @@ public partial class OpenApiMergeHandler
 
     private static string StripStartFromPath(string path, OpenApiInputConfiguration inputConfig)
     {
-        if (inputConfig.Path?.StripStart != null && !string.IsNullOrWhiteSpace(inputConfig.Path.StripStart))
+        if (inputConfig.Path?.StripStart != null && !string.IsNullOrWhiteSpace(inputConfig.Path.StripStart)
+            && path.StartsWith(inputConfig.Path.StripStart, StringComparison.Ordinal))
         {
             path = path[inputConfig.Path.StripStart.Length..];
         }

@@ -87,7 +87,7 @@ public partial class SwaggerMergeHandler
 
         var swaggerDocumentPaths = input.Paths;
 
-        foreach (var inputPath in input.Paths)
+        foreach (var inputPath in input.Paths.ToList())
         {
             var path = inputPath.Key;
             var pathOperations = inputPath.Value;
@@ -98,7 +98,7 @@ public partial class SwaggerMergeHandler
                 continue;
             }
 
-            foreach (var method in from pathOperation in pathOperations
+            var methodsToRemove = (from pathOperation in pathOperations.ToList()
                                    let method = pathOperation.Key
                                    let operation = pathOperation.Value
                                    from exclusion in inputConfig.Path.OperationExclusions.Where(
@@ -106,7 +106,9 @@ public partial class SwaggerMergeHandler
                                                                  operation.JTokenProperties.ContainsKey(pathOperationExclusion.Key) &&
                                                                  operation.JTokenProperties[pathOperationExclusion.Key]
                                                                      .GetRawText() == pathOperationExclusion.Value.GetRawText())
-                                   select method)
+                                   select method).ToList();
+
+            foreach (var method in methodsToRemove)
             {
                 pathOperations.Remove(method);
             }
@@ -126,7 +128,8 @@ public partial class SwaggerMergeHandler
 
     private static string StripStartFromPath(string path, SwaggerInputConfiguration inputConfig)
     {
-        if (inputConfig.Path?.StripStart != null && !string.IsNullOrWhiteSpace(inputConfig.Path.StripStart))
+        if (inputConfig.Path?.StripStart != null && !string.IsNullOrWhiteSpace(inputConfig.Path.StripStart)
+            && path.StartsWith(inputConfig.Path.StripStart, StringComparison.Ordinal))
         {
             path = path[inputConfig.Path.StripStart.Length..];
         }

@@ -44,7 +44,7 @@ SwaggerDocument merged = handler.Merge(config);
 
 The configuration object is made up of several options that allow you to customize and tailor the inputs and output.
 
-- `Inputs` - **Required**. An array of `InputPathConfiguration` objects. Each input has the following properties:
+- `Inputs` - **Required**. An array of `SwaggerInputConfiguration` objects. Each input has the following properties:
   - `File` - **Required**. The `SwaggerDocument` input file.
   - `Path` - **Optional**. A configuration object for the paths of APIs with the following properties:
     - `Prepend` - **Optional**. A string to prepend to the path of each operation in the input file.
@@ -138,10 +138,10 @@ internal class SwaggerMerger
         this.documentHandler = documentHandler;
     }
 
-    public async Task MergeAsync(SwaggerMergeConfiguration config)
+    public async Task MergeAsync(SwaggerMergeConfiguration config, string outputFilePath)
     {
         var output = this.mergeHandler.Merge(config);
-        await this.documentHandler.SaveToFilePathAsync(output, config.Output.File);
+        await this.documentHandler.SaveToPathAsync(output, outputFilePath);
     }
 }
 ```
