@@ -25,7 +25,7 @@ internal sealed class SwaggerMergeHandlerAotTest
         var d = merger.Merge(GetSwaggerMergeConfiguration());
 
         // Save the merged document to a file for manual inspection
-        File.WriteAllText("Documents/merged.swagger.json", JsonSerializer.Serialize(d, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument));
+        File.WriteAllText("Documents/merged.swagger.result.json", JsonSerializer.Serialize(d, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument));
 
         Assert(d.Info is { Title: "Swagger Merged" }, "Title was not set.");
         Assert(d.Info is { Version: "1.0.0" }, "Version was not set.");
@@ -91,7 +91,7 @@ internal sealed class SwaggerMergeHandlerAotTest
 
         var merged = merger.Merge(config);
 
-        File.WriteAllText("Documents/merged.openapi.json",
+        File.WriteAllText("Documents/merged.openapi.result.json",
             JsonSerializer.Serialize(merged, OpenApiDocumentJsonSerializerContext.Default.OpenApiDocument));
 
         Assert(merged.Info is { Title: "OpenAPI Merged" }, "V3: Title was not set.");
