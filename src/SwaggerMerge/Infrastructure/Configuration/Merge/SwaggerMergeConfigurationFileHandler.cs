@@ -82,7 +82,17 @@ internal sealed class SwaggerMergeConfigurationFileHandler(
 
         // Detect version from the first input file
         var firstContent = await ReadAllTextAsync(inputFiles[0].File);
-        var version = SpecVersionDetector.DetectVersion(firstContent);
+
+        SpecVersion version;
+        try
+        {
+            version = SpecVersionDetector.DetectVersion(firstContent);
+        }
+        catch (InvalidOperationException ex)
+        {
+            throw new SwaggerMergeException(
+                $"Could not determine the specification version of '{inputFiles[0].File}'. {ex.Message}", ex);
+        }
 
         return version switch
         {
@@ -114,7 +124,10 @@ internal sealed class SwaggerMergeConfigurationFileHandler(
                     $"Input file '{inputFiles[i].File}' is {inputVersion} but the first input is Swagger V2. All inputs must be the same specification version.");
             }
 
-            var doc = await v2DocumentHandler.LoadFromFilePathAsync(inputFiles[i].File);
+            var inputFormat = ISwaggerDocumentHandler.DetectFormat(inputFiles[i].File, content);
+            var doc = inputFormat == DocumentFormat.Yaml
+                ? v2DocumentHandler.LoadFromYaml(content)
+                : v2DocumentHandler.LoadFromJson(content);
             inputs.Add(new SwaggerInputConfiguration { File = doc, Path = inputFiles[i].Path, Info = inputFiles[i].Info });
         }
 
@@ -147,7 +160,10 @@ internal sealed class SwaggerMergeConfigurationFileHandler(
                     $"Input file '{inputFiles[i].File}' is {inputVersion} but the first input is OpenAPI V3. All inputs must be the same specification version.");
             }
 
-            var doc = await v3DocumentHandler.LoadFromFilePathAsync(inputFiles[i].File);
+            var inputFormat = IOpenApiDocumentHandler.DetectFormat(inputFiles[i].File, content);
+            var doc = inputFormat == DocumentFormat.Yaml
+                ? v3DocumentHandler.LoadFromYaml(content)
+                : v3DocumentHandler.LoadFromJson(content);
             inputs.Add(new OpenApiInputConfiguration { File = doc, Path = inputFiles[i].Path, Info = inputFiles[i].Info });
         }
 
@@ -180,7 +196,18 @@ internal sealed class SwaggerMergeConfigurationFileHandler(
         var v3Defs = new OpenApiDocumentSecurityDefinitions();
         foreach (var kvp in v2Defs)
         {
-            v3Defs[kvp.Key] = new V3.Document.OpenApiDocumentSecurityScheme { JTokenProperties = kvp.Value.JTokenProperties };
+            var v2Scheme = kvp.Value;
+            // Map common fields directly. V2 OAuth fields (Flow, AuthorizationUrl,
+            // TokenUrl, Scopes) are structurally different in V3 and are not mapped
+            // here; they fall through to JTokenProperties.
+            v3Defs[kvp.Key] = new V3.Document.OpenApiDocumentSecurityScheme
+            {
+                Type = v2Scheme.Type,
+                Description = v2Scheme.Description,
+                Name = v2Scheme.Name,
+                In = v2Scheme.In,
+                JTokenProperties = v2Scheme.JTokenProperties
+            };
         }
         return v3Defs;
     }
