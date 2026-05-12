@@ -56,9 +56,11 @@ public interface ISwaggerDocumentHandler
         {
             ".yaml" or ".yml" => DocumentFormat.Yaml,
             ".json" => DocumentFormat.Json,
-            _ => content != null
-                ? (content.TrimStart().StartsWith('{') ? DocumentFormat.Json : DocumentFormat.Yaml)
-                : DocumentFormat.Json
+            _ when !string.IsNullOrWhiteSpace(content) =>
+                content.TrimStart().StartsWith('{') || content.TrimStart().StartsWith('[')
+                    ? DocumentFormat.Json
+                    : DocumentFormat.Yaml,
+            _ => DocumentFormat.Json
         };
     }
 }

@@ -26,10 +26,31 @@ public class DocumentFormatDetectionTests
     }
 
     [Fact]
+    public void DetectFormat_UnknownExtension_WithJsonArrayContent_ReturnsJson()
+    {
+        var result = ISwaggerDocumentHandler.DetectFormat("file.txt", "[{\"id\": 1}]");
+        Assert.Equal(DocumentFormat.Json, result);
+    }
+
+    [Fact]
     public void DetectFormat_UnknownExtension_WithYamlContent_ReturnsYaml()
     {
         var result = ISwaggerDocumentHandler.DetectFormat("file.txt", "swagger: '2.0'");
         Assert.Equal(DocumentFormat.Yaml, result);
+    }
+
+    [Fact]
+    public void DetectFormat_UnknownExtension_WithWhitespaceContent_DefaultsToJson()
+    {
+        var result = ISwaggerDocumentHandler.DetectFormat("file.txt", "   ");
+        Assert.Equal(DocumentFormat.Json, result);
+    }
+
+    [Fact]
+    public void DetectFormat_UnknownExtension_WithEmptyContent_DefaultsToJson()
+    {
+        var result = ISwaggerDocumentHandler.DetectFormat("file.txt", "");
+        Assert.Equal(DocumentFormat.Json, result);
     }
 
     [Fact]

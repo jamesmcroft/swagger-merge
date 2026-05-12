@@ -58,7 +58,9 @@ public class YamlDocumentFormatHandler : IDocumentFormatHandler
                 writer.WriteStartObject();
                 foreach (var entry in mapping.Children)
                 {
-                    var key = ((YamlScalarNode)entry.Key).Value!;
+                    var key = entry.Key is YamlScalarNode scalarKey
+                        ? scalarKey.Value ?? string.Empty
+                        : entry.Key.ToString();
                     writer.WritePropertyName(key);
                     WriteYamlNodeAsJson(writer, entry.Value);
                 }
@@ -101,24 +103,25 @@ public class YamlDocumentFormatHandler : IDocumentFormatHandler
             return;
         }
 
+        // Only coerce unquoted scalars that are unambiguously typed.
+        // Booleans: true/false (case-insensitive per YAML 1.1/1.2 core schema)
         if (bool.TryParse(value, out var boolVal))
         {
             writer.WriteBooleanValue(boolVal);
             return;
         }
 
-        if (long.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var longVal))
+        // Pure integers (no decimal point) are safe to coerce
+        if (long.TryParse(value, System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out var longVal)
+            && !value.Contains('.'))
         {
             writer.WriteNumberValue(longVal);
             return;
         }
 
-        if (double.TryParse(value, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out var doubleVal))
-        {
-            writer.WriteNumberValue(doubleVal);
-            return;
-        }
-
+        // Treat all other scalars as strings to avoid coercing version-like
+        // values (e.g. "2.0") to JSON numbers, which would break fields
+        // defined as strings in the Swagger/OpenAPI specification.
         writer.WriteStringValue(value);
     }
 
