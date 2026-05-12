@@ -1,7 +1,8 @@
 param([string]$targetNetFramework)
 
 $rootDirectory = Split-Path $PSScriptRoot -Parent
-$publishOutput = dotnet publish $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/SwaggerMerge.AotCompatibility.TestApp.csproj -nodeReuse:false /p:UseSharedCompilation=false /p:ExposeExperimentalFeatures=true
+$outputDir = "$rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/bin/aot-publish"
+$publishOutput = dotnet publish $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/SwaggerMerge.AotCompatibility.TestApp.csproj -nodeReuse:false /p:UseSharedCompilation=false /p:ExposeExperimentalFeatures=true -o $outputDir
 
 $actualWarningCount = 0
 
@@ -13,7 +14,7 @@ foreach ($line in $($publishOutput -split "`r`n")) {
     }
 }
 
-Push-Location $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/bin/Release/$targetNetFramework/linux-x64
+Push-Location $outputDir
 
 Write-Host "Executing test App..."
 ./SwaggerMerge.AotCompatibility.TestApp

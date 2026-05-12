@@ -1,0 +1,158 @@
+name: CI
+
+on:
+  push:
+    tags:
+    - v*
+    branches:
+    - main
+    paths:
+    - src/**
+    - test/**
+    - build/**
+    - .github/workflows/ci.yml
+    - Directory.Build.props
+  pull_request:
+    branches:
+    - main
+    paths:
+    - src/**
+    - test/**
+    - build/**
+    - .github/workflows/ci.yml
+    - Directory.Build.props
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+
+    env:
+      BUILD_CONFIG: 'Release'
+      SOLUTION: 'SwaggerMerge.sln'
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Get Build Version
+      run: |
+        Import-Module .\build\GetBuildVersion.psm1
+        Write-Host $Env:GITHUB_REF
+        $version = GetBuildVersion -VersionString $Env:GITHUB_REF
+        echo "BUILD_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+      shell: pwsh
+
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup .NET 10.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore $SOLUTION
+
+    - name: Build
+      run: dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore -p:Version=$BUILD_VERSION
+
+    - name: Run tests
+      run: >
+        dotnet test
+        --configuration $BUILD_CONFIG
+        --no-restore
+        --no-build
+        --collect:"XPlat Code Coverage"
+
+    - name: Generate coverage report
+      uses: danielpalme/ReportGenerator-GitHub-Action@5
+      with:
+        reports: '**/coverage.cobertura.xml'
+        targetdir: 'coverage-report'
+        reporttypes: 'MarkdownSummaryGithub;Cobertura'
+
+    - name: Publish coverage to workflow summary
+      run: cat coverage-report/SummaryGithub.md >> $GITHUB_STEP_SUMMARY
+
+    - name: Post coverage to PR
+      if: github.event_name == 'pull_request'
+      run: gh pr comment $PR_NUMBER --edit-last --create-if-none --body-file coverage-report/SummaryGithub.md
+      env:
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        PR_NUMBER: ${{ github.event.number }}
+
+  aot-test:
+    needs: build-test
+    runs-on: ubuntu-latest
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup .NET 10.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Assert static analysis warning count and run AOT compatibility tests
+      shell: pwsh
+      run: .\build\Test-AotCompat.ps1 net10.0
+
+  publish:
+    needs: [build-test, aot-test]
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+
+    env:
+      BUILD_CONFIG: 'Release'
+      SOLUTION: 'SwaggerMerge.sln'
+
+    steps:
+    - uses: actions/checkout@v6
+      with:
+        fetch-depth: 0
+
+    - name: Get Build Version
+      run: |
+        Import-Module .\build\GetBuildVersion.psm1
+        Write-Host $Env:GITHUB_REF
+        $version = GetBuildVersion -VersionString $Env:GITHUB_REF
+        echo "BUILD_VERSION=$version" | Out-File -FilePath $Env:GITHUB_ENV -Encoding utf-8 -Append
+      shell: pwsh
+
+    - name: Setup .NET 8.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 8.0.x
+
+    - name: Setup .NET 10.0
+      uses: actions/setup-dotnet@v5
+      with:
+        dotnet-version: 10.0.x
+
+    - name: Restore dependencies
+      run: dotnet restore $SOLUTION
+
+    - name: Build
+      run: dotnet build $SOLUTION --configuration $BUILD_CONFIG --no-restore -p:Version=$BUILD_VERSION
+
+    - name: Publish to NuGet.org
+      run: |
+        Get-ChildItem . -Recurse -Filter *.nupkg | ForEach-Object {
+          dotnet nuget push $_.FullName --source 'https://api.nuget.org/v3/index.json' --api-key '${{ secrets.NUGET_API_KEY }}' --skip-duplicate
+        }
+      shell: pwsh
