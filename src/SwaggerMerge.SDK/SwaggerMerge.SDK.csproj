@@ -23,4 +23,8 @@
     <PackageReference Update="Microsoft.SourceLink.GitHub" Version="10.0.203" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="YamlDotNet" Version="17.1.0" />
+  </ItemGroup>
+
 </Project>

@@ -81,4 +81,145 @@ public class SwaggerDocumentHandlerTests
         Assert.Equal(document.Host, roundTripped.Host);
         Assert.Equal(document.BasePath, roundTripped.BasePath);
     }
+
+    [Fact]
+    public async Task LoadFromFilePathAsync_YamlFile_ReturnsDocument()
+    {
+        var document = await _handler.LoadFromFilePathAsync("Documents/pet.swagger.yaml");
+
+        Assert.Equal("2.0", document.SwaggerVersion);
+        Assert.Equal("Swagger Petstore 2.0", document.Info.Title);
+        Assert.Equal("1.0.0", document.Info.Version);
+        Assert.NotNull(document.Paths);
+        Assert.True(document.Paths.Count > 0);
+        Assert.Contains("/pet", document.Paths.Keys);
+    }
+
+    [Fact]
+    public async Task LoadFromFilePathAsync_YamlStoreFile_ReturnsDocumentWithPaths()
+    {
+        var document = await _handler.LoadFromFilePathAsync("Documents/store.swagger.yaml");
+
+        Assert.Equal("Swagger Petstore 2.0", document.Info.Title);
+        Assert.NotNull(document.Paths);
+        Assert.Contains("/store/inventory", document.Paths.Keys);
+        Assert.Contains("/store/order", document.Paths.Keys);
+    }
+
+    [Fact]
+    public void LoadFromYaml_ValidYaml_ReturnsDocument()
+    {
+        var yaml = File.ReadAllText("Documents/pet.swagger.yaml");
+        var document = _handler.LoadFromYaml(yaml);
+
+        Assert.Equal("Swagger Petstore 2.0", document.Info.Title);
+        Assert.NotNull(document.Paths);
+        Assert.Contains("/pet", document.Paths.Keys);
+    }
+
+    [Fact]
+    public async Task SaveToPathAsync_YamlExtension_SavesAsYaml()
+    {
+        var original = await _handler.LoadFromFilePathAsync("Documents/pet.swagger.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"swagger-test-{Guid.NewGuid()}.yaml");
+
+        try
+        {
+            await _handler.SaveToPathAsync(original, tempPath);
+            var content = await File.ReadAllTextAsync(tempPath);
+
+            Assert.StartsWith("swagger:", content.TrimStart());
+            Assert.Contains("Swagger Petstore 2.0", content);
+            Assert.DoesNotContain("\"swagger\":", content);
+        }
+        finally
+        {
+            File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task SaveToPathAsync_ExplicitYamlFormat_SavesAsYaml()
+    {
+        var original = await _handler.LoadFromFilePathAsync("Documents/pet.swagger.json");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"swagger-test-{Guid.NewGuid()}.txt");
+
+        try
+        {
+            await _handler.SaveToPathAsync(original, tempPath, DocumentFormat.Yaml);
+            var content = await File.ReadAllTextAsync(tempPath);
+
+            Assert.StartsWith("swagger:", content.TrimStart());
+            Assert.DoesNotContain("\"swagger\":", content);
+        }
+        finally
+        {
+            File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task YamlRoundTrip_LoadYamlSaveYamlReload_PreservesStructure()
+    {
+        var original = await _handler.LoadFromFilePathAsync("Documents/pet.swagger.yaml");
+        var tempPath = Path.Combine(Path.GetTempPath(), $"swagger-test-{Guid.NewGuid()}.yaml");
+
+        try
+        {
+            await _handler.SaveToPathAsync(original, tempPath);
+            var reloaded = await _handler.LoadFromFilePathAsync(tempPath);
+
+            Assert.Equal(original.Info.Title, reloaded.Info.Title);
+            Assert.Equal(original.Info.Version, reloaded.Info.Version);
+            Assert.Equal(original.Paths?.Count, reloaded.Paths?.Count);
+            Assert.Equal(original.Host, reloaded.Host);
+            Assert.Equal(original.BasePath, reloaded.BasePath);
+        }
+        finally
+        {
+            File.Delete(tempPath);
+        }
+    }
+
+    [Fact]
+    public async Task CrossFormat_LoadJsonSaveYamlReloadFromYaml_PreservesStructure()
+    {
+        var original = await _handler.LoadFromFilePathAsync("Documents/store.swagger.json");
+        var tempYaml = Path.Combine(Path.GetTempPath(), $"swagger-test-{Guid.NewGuid()}.yaml");
+
+        try
+        {
+            await _handler.SaveToPathAsync(original, tempYaml);
+            var reloaded = await _handler.LoadFromFilePathAsync(tempYaml);
+
+            Assert.Equal(original.Info.Title, reloaded.Info.Title);
+            Assert.Equal(original.Info.Version, reloaded.Info.Version);
+            Assert.Equal(original.Paths?.Count, reloaded.Paths?.Count);
+        }
+        finally
+        {
+            File.Delete(tempYaml);
+        }
+    }
+
+    [Fact]
+    public async Task CrossFormat_LoadYamlSaveJsonReloadFromJson_PreservesStructure()
+    {
+        var original = await _handler.LoadFromFilePathAsync("Documents/pet.swagger.yaml");
+        var tempJson = Path.Combine(Path.GetTempPath(), $"swagger-test-{Guid.NewGuid()}.json");
+
+        try
+        {
+            await _handler.SaveToPathAsync(original, tempJson);
+            var reloaded = await _handler.LoadFromFilePathAsync(tempJson);
+
+            Assert.Equal(original.Info.Title, reloaded.Info.Title);
+            Assert.Equal(original.Info.Version, reloaded.Info.Version);
+            Assert.Equal(original.Paths?.Count, reloaded.Paths?.Count);
+        }
+        finally
+        {
+            File.Delete(tempJson);
+        }
+    }
 }

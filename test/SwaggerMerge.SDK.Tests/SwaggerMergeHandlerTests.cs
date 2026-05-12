@@ -289,4 +289,32 @@ public class SwaggerMergeHandlerTests
         Assert.NotNull(result.Paths);
         Assert.Contains("/pet", result.Paths.Keys);
     }
+
+    [Fact]
+    public void Merge_MixedFormatInputs_JsonAndYaml_CombinesPaths()
+    {
+        var jsonDoc = TestDocumentLoader.Load("pet.swagger.json");
+        var yamlDoc = TestDocumentLoader.LoadYaml("store.swagger.yaml");
+
+        var config = new SwaggerMergeConfiguration
+        {
+            Inputs = new[]
+            {
+                new SwaggerInputConfiguration { File = jsonDoc },
+                new SwaggerInputConfiguration { File = yamlDoc }
+            },
+            Output = new SwaggerOutputConfiguration
+            {
+                Info = new SwaggerOutputInfoConfiguration { Title = "Mixed Format API", Version = "1.0" },
+                Host = "localhost"
+            }
+        };
+
+        var result = _handler.Merge(config);
+
+        Assert.Equal("Mixed Format API", result.Info.Title);
+        Assert.NotNull(result.Paths);
+        Assert.Contains("/pet", result.Paths.Keys);
+        Assert.Contains("/store/inventory", result.Paths.Keys);
+    }
 }
