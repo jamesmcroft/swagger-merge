@@ -56,7 +56,7 @@ jobs:
     - name: Setup .NET 10.0
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 10.0.x
+        dotnet-version: 10.0.3xx
 
     - name: Restore dependencies
       run: dotnet restore $SOLUTION
@@ -106,7 +106,7 @@ jobs:
     - name: Setup .NET 10.0
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 10.0.x
+        dotnet-version: 10.0.3xx
 
     - name: Assert static analysis warning count and run AOT compatibility tests
       shell: pwsh
@@ -142,7 +142,7 @@ jobs:
     - name: Setup .NET 10.0
       uses: actions/setup-dotnet@v5
       with:
-        dotnet-version: 10.0.x
+        dotnet-version: 10.0.3xx
 
     - name: Restore dependencies
       run: dotnet restore $SOLUTION

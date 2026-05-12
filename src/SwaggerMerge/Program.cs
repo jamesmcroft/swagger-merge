@@ -43,8 +43,10 @@ public class Program
             {
                 services.AddLogging();
                 services.AddTransient<SwaggerMerge.V2.Document.ISwaggerDocumentHandler, SwaggerMerge.V2.Document.SwaggerDocumentHandler>();
+                services.AddTransient<SwaggerMerge.V3.Document.IOpenApiDocumentHandler, SwaggerMerge.V3.Document.OpenApiDocumentHandler>();
                 services.AddTransient<ISwaggerMergeConfigurationFileHandler, SwaggerMergeConfigurationFileHandler>();
                 services.AddTransient<SwaggerMerge.V2.ISwaggerMergeHandler, SwaggerMerge.V2.SwaggerMergeHandler>();
+                services.AddTransient<SwaggerMerge.V3.IOpenApiMergeHandler, SwaggerMerge.V3.OpenApiMergeHandler>();
                 services.AddTransient<ISwaggerMerger, SwaggerMerger>();
             });
 
