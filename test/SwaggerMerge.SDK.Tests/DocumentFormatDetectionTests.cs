@@ -73,4 +73,12 @@ public class DocumentFormatDetectionTests
         var result = ISwaggerDocumentHandler.DetectFormat("file.yaml", "{ }");
         Assert.Equal(DocumentFormat.Yaml, result);
     }
+
+    [Fact]
+    public void DetectFormat_UnknownExtension_WithYamlFlowStyle_ReturnsYaml()
+    {
+        // YAML flow-style looks like JSON but has unquoted keys
+        var result = ISwaggerDocumentHandler.DetectFormat("file.txt", "{swagger: \"2.0\", info: {title: test}}");
+        Assert.Equal(DocumentFormat.Yaml, result);
+    }
 }

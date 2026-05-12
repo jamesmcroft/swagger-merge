@@ -222,4 +222,11 @@ public class SwaggerDocumentHandlerTests
             File.Delete(tempJson);
         }
     }
+
+    [Fact]
+    public void LoadFromYaml_InvalidYaml_ThrowsWithYamlMessage()
+    {
+        var ex = Assert.Throws<InvalidOperationException>(() => _handler.LoadFromYaml("not: [valid: yaml: content"));
+        Assert.Contains("YAML", ex.Message);
+    }
 }

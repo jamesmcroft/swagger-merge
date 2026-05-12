@@ -56,11 +56,35 @@ public interface ISwaggerDocumentHandler
         {
             ".yaml" or ".yml" => DocumentFormat.Yaml,
             ".json" => DocumentFormat.Json,
-            _ when !string.IsNullOrWhiteSpace(content) =>
-                content.TrimStart().StartsWith('{') || content.TrimStart().StartsWith('[')
-                    ? DocumentFormat.Json
-                    : DocumentFormat.Yaml,
+            _ when !string.IsNullOrWhiteSpace(content) => SniffContentFormat(content),
             _ => DocumentFormat.Json
         };
+    }
+
+    private static DocumentFormat SniffContentFormat(string content)
+    {
+        var trimmed = content.TrimStart();
+        if (trimmed.Length == 0)
+        {
+            return DocumentFormat.Json;
+        }
+
+        // If content starts with '{' or '[', it could be JSON or YAML flow-style.
+        // Attempt a lightweight JSON parse to distinguish.
+        if (trimmed[0] is '{' or '[')
+        {
+            try
+            {
+                System.Text.Json.JsonDocument.Parse(content).Dispose();
+                return DocumentFormat.Json;
+            }
+            catch (System.Text.Json.JsonException)
+            {
+                // Not valid JSON (e.g. YAML flow-style with unquoted keys); treat as YAML.
+                return DocumentFormat.Yaml;
+            }
+        }
+
+        return DocumentFormat.Yaml;
     }
 }

@@ -21,8 +21,16 @@ public class YamlDocumentFormatHandler : IDocumentFormatHandler
     /// <inheritdoc/>
     public SwaggerDocument Deserialize(string content)
     {
-        var json = ConvertYamlToJson(content);
-        return _jsonHandler.Deserialize(json);
+        try
+        {
+            var json = ConvertYamlToJson(content);
+            return _jsonHandler.Deserialize(json);
+        }
+        catch (Exception ex) when (ex is InvalidOperationException or JsonException or YamlException)
+        {
+            throw new InvalidOperationException(
+                "The Swagger document YAML could not be loaded correctly as the format is not as expected.", ex);
+        }
     }
 
     /// <inheritdoc/>
