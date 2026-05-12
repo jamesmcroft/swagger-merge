@@ -8,39 +8,16 @@ using YamlDotNet.Core;
 using YamlDotNet.RepresentationModel;
 
 /// <summary>
-/// Handles serialization and deserialization of <see cref="SwaggerDocument"/> objects in YAML format.
-/// Uses AOT-safe YamlDotNet representation model APIs, converting via JSON as an intermediary.
+/// Provides AOT-safe YAML-to-JSON and JSON-to-YAML conversion utilities shared by both V2 and V3 format handlers.
 /// </summary>
-public class YamlDocumentFormatHandler : IDocumentFormatHandler
+internal static class YamlJsonConverter
 {
-    private readonly JsonDocumentFormatHandler _jsonHandler = new();
-
-    /// <inheritdoc/>
-    public DocumentFormat Format => DocumentFormat.Yaml;
-
-    /// <inheritdoc/>
-    public SwaggerDocument Deserialize(string content)
-    {
-        try
-        {
-            var json = ConvertYamlToJson(content);
-            return _jsonHandler.Deserialize(json);
-        }
-        catch (Exception ex) when (ex is InvalidOperationException or JsonException or YamlException)
-        {
-            throw new InvalidOperationException(
-                "The Swagger document YAML could not be loaded correctly as the format is not as expected.", ex);
-        }
-    }
-
-    /// <inheritdoc/>
-    public string Serialize(SwaggerDocument document)
-    {
-        var json = _jsonHandler.Serialize(document);
-        return ConvertJsonToYaml(json);
-    }
-
-    private static string ConvertYamlToJson(string yaml)
+    /// <summary>
+    /// Converts a YAML string to a JSON string.
+    /// </summary>
+    /// <param name="yaml">The YAML content.</param>
+    /// <returns>The equivalent JSON content.</returns>
+    public static string ConvertYamlToJson(string yaml)
     {
         using var reader = new StringReader(yaml);
         var yamlStream = new YamlStream();
@@ -56,6 +33,39 @@ public class YamlDocumentFormatHandler : IDocumentFormatHandler
         WriteYamlNodeAsJson(writer, yamlStream.Documents[0].RootNode);
         writer.Flush();
         return Encoding.UTF8.GetString(memoryStream.ToArray());
+    }
+
+    /// <summary>
+    /// Converts a JSON string to a YAML string.
+    /// </summary>
+    /// <param name="json">The JSON content.</param>
+    /// <returns>The equivalent YAML content.</returns>
+    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "JsonNode deserialization does not require type metadata.")]
+    public static string ConvertJsonToYaml(string json)
+    {
+        var jsonNode = JsonNode.Parse(json);
+        var yamlNode = ConvertJsonNodeToYamlNode(jsonNode);
+
+        var document = new YamlDocument(yamlNode);
+        var yamlStream = new YamlStream(document);
+
+        using var writer = new StringWriter();
+        yamlStream.Save(writer, assignAnchors: false);
+        var yaml = writer.ToString();
+
+        // YamlStream.Save appends "..." document end marker; remove it for cleaner output
+        const string documentEndMarker = "...\r\n";
+        const string documentEndMarkerUnix = "...\n";
+        if (yaml.EndsWith(documentEndMarker, StringComparison.Ordinal))
+        {
+            yaml = yaml[..^documentEndMarker.Length];
+        }
+        else if (yaml.EndsWith(documentEndMarkerUnix, StringComparison.Ordinal))
+        {
+            yaml = yaml[..^documentEndMarkerUnix.Length];
+        }
+
+        return yaml;
     }
 
     private static void WriteYamlNodeAsJson(Utf8JsonWriter writer, YamlNode node)
@@ -131,34 +141,6 @@ public class YamlDocumentFormatHandler : IDocumentFormatHandler
         // values (e.g. "2.0") to JSON numbers, which would break fields
         // defined as strings in the Swagger/OpenAPI specification.
         writer.WriteStringValue(value);
-    }
-
-    [UnconditionalSuppressMessage("Trimming", "IL2026", Justification = "JsonNode deserialization does not require type metadata.")]
-    private static string ConvertJsonToYaml(string json)
-    {
-        var jsonNode = JsonNode.Parse(json);
-        var yamlNode = ConvertJsonNodeToYamlNode(jsonNode);
-
-        var document = new YamlDocument(yamlNode);
-        var yamlStream = new YamlStream(document);
-
-        using var writer = new StringWriter();
-        yamlStream.Save(writer, assignAnchors: false);
-        var yaml = writer.ToString();
-
-        // YamlStream.Save appends "..." document end marker; remove it for cleaner output
-        const string documentEndMarker = "...\r\n";
-        const string documentEndMarkerUnix = "...\n";
-        if (yaml.EndsWith(documentEndMarker, StringComparison.Ordinal))
-        {
-            yaml = yaml[..^documentEndMarker.Length];
-        }
-        else if (yaml.EndsWith(documentEndMarkerUnix, StringComparison.Ordinal))
-        {
-            yaml = yaml[..^documentEndMarkerUnix.Length];
-        }
-
-        return yaml;
     }
 
     private static YamlNode ConvertJsonNodeToYamlNode(JsonNode? node)
