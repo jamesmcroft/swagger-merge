@@ -21,6 +21,9 @@ updates:
       analyzers:
         patterns:
           - "Microsoft.SourceLink*"
+      logging:
+        patterns:
+          - "Serilog*"
 
   - package-ecosystem: github-actions
     directory: "/"
