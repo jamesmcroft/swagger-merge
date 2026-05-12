@@ -107,7 +107,7 @@ public partial class OpenApiMergeHandler
                                        pathOperationExclusion => operation.JTokenProperties != null &&
                                                                  operation.JTokenProperties.ContainsKey(pathOperationExclusion.Key) &&
                                                                  operation.JTokenProperties[pathOperationExclusion.Key]
-                                                                     .Equals(pathOperationExclusion.Value))
+                                                                     .GetRawText() == pathOperationExclusion.Value.GetRawText())
                                    select method)
             {
                 pathOperations.Remove(method);

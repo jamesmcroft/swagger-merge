@@ -230,4 +230,127 @@ public class SwaggerDocumentHandlerTests
         var ex = Assert.Throws<InvalidOperationException>(() => _handler.LoadFromYaml("not: [valid: yaml: content"));
         Assert.Contains("YAML", ex.Message);
     }
+
+    // --- Extension Property Tests ---
+
+    [Fact]
+    public void LoadFromJson_ExtensionProperties_SurviveRoundTrip()
+    {
+        var json = """
+        {
+          "swagger": "2.0",
+          "info": { "title": "Test", "version": "1.0" },
+          "host": "localhost",
+          "paths": {},
+          "x-api-gateway": "aws",
+          "x-custom-flag": true
+        }
+        """;
+
+        var document = _handler.LoadFromJson(json);
+
+        Assert.NotNull(document.JTokenProperties);
+        Assert.True(document.JTokenProperties.ContainsKey("x-api-gateway"));
+        Assert.Equal("aws", document.JTokenProperties["x-api-gateway"].GetString());
+        Assert.True(document.JTokenProperties.ContainsKey("x-custom-flag"));
+        Assert.True(document.JTokenProperties["x-custom-flag"].GetBoolean());
+
+        var reserialized = JsonSerializer.Serialize(document, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument);
+        var roundTripped = _handler.LoadFromJson(reserialized);
+
+        Assert.NotNull(roundTripped.JTokenProperties);
+        Assert.True(roundTripped.JTokenProperties.ContainsKey("x-api-gateway"));
+        Assert.Equal("aws", roundTripped.JTokenProperties["x-api-gateway"].GetString());
+        Assert.True(roundTripped.JTokenProperties.ContainsKey("x-custom-flag"));
+        Assert.True(roundTripped.JTokenProperties["x-custom-flag"].GetBoolean());
+    }
+
+    [Fact]
+    public void LoadFromJson_OperationExtensionProperties_SurviveRoundTrip()
+    {
+        var json = """
+        {
+          "swagger": "2.0",
+          "info": { "title": "Test", "version": "1.0" },
+          "host": "localhost",
+          "paths": {
+            "/test": {
+              "get": {
+                "summary": "Test op",
+                "operationId": "testOp",
+                "x-internal": true,
+                "x-api-id": "op-123",
+                "responses": {
+                  "200": { "description": "OK" }
+                }
+              }
+            }
+          }
+        }
+        """;
+
+        var document = _handler.LoadFromJson(json);
+
+        var getOp = document.Paths!["/test"]["get"];
+        Assert.NotNull(getOp.JTokenProperties);
+        Assert.True(getOp.JTokenProperties.ContainsKey("x-internal"));
+        Assert.True(getOp.JTokenProperties["x-internal"].GetBoolean());
+        Assert.Equal("op-123", getOp.JTokenProperties["x-api-id"].GetString());
+
+        var reserialized = JsonSerializer.Serialize(document, SwaggerDocumentJsonSerializerContext.Default.SwaggerDocument);
+        var roundTripped = _handler.LoadFromJson(reserialized);
+
+        var rtOp = roundTripped.Paths!["/test"]["get"];
+        Assert.NotNull(rtOp.JTokenProperties);
+        Assert.True(rtOp.JTokenProperties.ContainsKey("x-internal"));
+        Assert.True(rtOp.JTokenProperties["x-internal"].GetBoolean());
+        Assert.Equal("op-123", rtOp.JTokenProperties["x-api-id"].GetString());
+    }
+
+    [Fact]
+    public async Task ExtensionProperties_SurviveYamlRoundTrip()
+    {
+        var json = """
+        {
+          "swagger": "2.0",
+          "info": { "title": "Test", "version": "1.0" },
+          "host": "localhost",
+          "paths": {
+            "/test": {
+              "get": {
+                "summary": "Test op",
+                "operationId": "testOp",
+                "x-internal": true,
+                "responses": {
+                  "200": { "description": "OK" }
+                }
+              }
+            }
+          },
+          "x-api-gateway": "aws"
+        }
+        """;
+
+        var document = _handler.LoadFromJson(json);
+        var tempPath = Path.Combine(Path.GetTempPath(), $"swagger-ext-test-{Guid.NewGuid()}.yaml");
+
+        try
+        {
+            await _handler.SaveToPathAsync(document, tempPath);
+            var reloaded = await _handler.LoadFromFilePathAsync(tempPath);
+
+            Assert.NotNull(reloaded.JTokenProperties);
+            Assert.True(reloaded.JTokenProperties.ContainsKey("x-api-gateway"));
+            Assert.Equal("aws", reloaded.JTokenProperties["x-api-gateway"].GetString());
+
+            var getOp = reloaded.Paths!["/test"]["get"];
+            Assert.NotNull(getOp.JTokenProperties);
+            Assert.True(getOp.JTokenProperties.ContainsKey("x-internal"));
+            Assert.True(getOp.JTokenProperties["x-internal"].GetBoolean());
+        }
+        finally
+        {
+            File.Delete(tempPath);
+        }
+    }
 }

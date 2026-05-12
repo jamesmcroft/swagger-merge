@@ -1,5 +1,7 @@
 namespace SwaggerMerge.V3;
 
+using System.Text;
+using System.Text.Json;
 using SwaggerMerge.V3.Document;
 using SwaggerMerge.Common.Extensions;
 
@@ -100,14 +102,20 @@ public partial class OpenApiMergeHandler
                 }
             }
 
-            if (operation.AdditionalProperties == null || !operation.AdditionalProperties.Any())
+            if (operation.JTokenProperties == null || !operation.JTokenProperties.Any())
             {
                 continue;
             }
 
-            foreach (var additionalProperty in operation.AdditionalProperties)
+            foreach (var jTokenProperty in operation.JTokenProperties)
             {
-                PopulateReferences(definedPathReferences, additionalProperty.Value);
+                if (jTokenProperty.Value.ValueKind is not (JsonValueKind.Object or JsonValueKind.Array))
+                {
+                    continue;
+                }
+
+                var property = JsonElementToOpenApiDocumentProperty(jTokenProperty.Value);
+                PopulateReferences(definedPathReferences, property);
             }
         }
 
@@ -158,15 +166,32 @@ public partial class OpenApiMergeHandler
             }
         }
 
-        if (data.AdditionalProperties == null || !data.AdditionalProperties.Any())
+        if (data.JTokenProperties == null || !data.JTokenProperties.Any())
         {
             return;
         }
 
-        foreach (var additionalProperty in data.AdditionalProperties)
+        foreach (var jTokenProperty in data.JTokenProperties)
         {
-            PopulateReferences(references, additionalProperty.Value);
+            if (jTokenProperty.Value.ValueKind is not (JsonValueKind.Object or JsonValueKind.Array))
+            {
+                continue;
+            }
+
+            var property = JsonElementToOpenApiDocumentProperty(jTokenProperty.Value);
+            PopulateReferences(references, property);
         }
+    }
+
+    private static OpenApiDocumentProperty JsonElementToOpenApiDocumentProperty(JsonElement element)
+    {
+        using var sw = new MemoryStream();
+        using var jw = new Utf8JsonWriter(sw);
+        element.WriteTo(jw);
+        jw.Flush();
+        var json = Encoding.UTF8.GetString(sw.ToArray());
+        return JsonSerializer.Deserialize(json, OpenApiDocumentPropertyJsonSerializerContext.Default.OpenApiDocumentProperty)
+               ?? new OpenApiDocumentProperty();
     }
 
     private static KeyValuePair<string, OpenApiDocumentProperty> GetComponentSchemaByReference(

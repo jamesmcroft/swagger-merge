@@ -337,4 +337,134 @@ public class OpenApiMergeHandlerTests
 
         Assert.Equal("3.0.3", result.OpenApiVersion);
     }
+
+    // --- Extension Property Merge Tests ---
+
+    [Fact]
+    public void Merge_PreservesExtensionPropertiesOnOperations()
+    {
+        var jsonHandler = new OpenApiJsonDocumentFormatHandler();
+        var json = """
+        {
+          "openapi": "3.0.3",
+          "info": { "title": "Ext Test", "version": "1.0" },
+          "paths": {
+            "/items": {
+              "get": {
+                "summary": "List items",
+                "operationId": "listItems",
+                "x-internal": true,
+                "x-rate-limit": 100,
+                "responses": {
+                  "200": { "description": "OK" }
+                }
+              },
+              "post": {
+                "summary": "Create item",
+                "operationId": "createItem",
+                "x-internal": false,
+                "responses": {
+                  "201": { "description": "Created" }
+                }
+              }
+            }
+          }
+        }
+        """;
+
+        var doc = jsonHandler.Deserialize(json);
+
+        var config = new OpenApiMergeConfiguration
+        {
+            Inputs = new[]
+            {
+                new OpenApiInputConfiguration { File = doc }
+            },
+            Output = new OpenApiOutputConfiguration
+            {
+                Info = new OpenApiOutputInfoConfiguration { Title = "Merged", Version = "1.0" }
+            }
+        };
+
+        var result = _handler.Merge(config);
+
+        Assert.NotNull(result.Paths);
+        Assert.Contains("/items", result.Paths.Keys);
+
+        var getOp = result.Paths["/items"]["get"];
+        Assert.NotNull(getOp.JTokenProperties);
+        Assert.True(getOp.JTokenProperties.ContainsKey("x-internal"));
+        Assert.True(getOp.JTokenProperties["x-internal"].GetBoolean());
+        Assert.True(getOp.JTokenProperties.ContainsKey("x-rate-limit"));
+        Assert.Equal(100, getOp.JTokenProperties["x-rate-limit"].GetInt32());
+
+        var postOp = result.Paths["/items"]["post"];
+        Assert.NotNull(postOp.JTokenProperties);
+        Assert.True(postOp.JTokenProperties.ContainsKey("x-internal"));
+        Assert.False(postOp.JTokenProperties["x-internal"].GetBoolean());
+    }
+
+    [Fact]
+    public void Merge_WithOperationExclusion_ExcludesMatchingOperations()
+    {
+        var jsonHandler = new OpenApiJsonDocumentFormatHandler();
+        var json = """
+        {
+          "openapi": "3.0.3",
+          "info": { "title": "Exclusion Test", "version": "1.0" },
+          "paths": {
+            "/public": {
+              "get": {
+                "summary": "Public endpoint",
+                "operationId": "getPublic",
+                "x-internal": false,
+                "responses": {
+                  "200": { "description": "OK" }
+                }
+              }
+            },
+            "/internal": {
+              "get": {
+                "summary": "Internal endpoint",
+                "operationId": "getInternal",
+                "x-internal": true,
+                "responses": {
+                  "200": { "description": "OK" }
+                }
+              }
+            }
+          }
+        }
+        """;
+
+        var doc = jsonHandler.Deserialize(json);
+
+        var exclusion = new InputPathOperationExclusionConfiguration();
+        exclusion.Add("x-internal", System.Text.Json.JsonSerializer.SerializeToElement(true));
+
+        var config = new OpenApiMergeConfiguration
+        {
+            Inputs = new[]
+            {
+                new OpenApiInputConfiguration
+                {
+                    File = doc,
+                    Path = new InputPathConfiguration
+                    {
+                        OperationExclusions = exclusion
+                    }
+                }
+            },
+            Output = new OpenApiOutputConfiguration
+            {
+                Info = new OpenApiOutputInfoConfiguration { Title = "Filtered", Version = "1.0" }
+            }
+        };
+
+        var result = _handler.Merge(config);
+
+        Assert.NotNull(result.Paths);
+        Assert.Contains("/public", result.Paths.Keys);
+        Assert.DoesNotContain("/internal", result.Paths.Keys);
+    }
 }

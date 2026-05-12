@@ -1,5 +1,7 @@
 namespace SwaggerMerge.V2;
 
+using System.Text;
+using System.Text.Json;
 using SwaggerMerge.V2.Document;
 using SwaggerMerge.Common.Extensions;
 
@@ -91,14 +93,20 @@ public partial class SwaggerMergeHandler
                 }
             }
 
-            if (operation.AdditionalProperties == null || !operation.AdditionalProperties.Any())
+            if (operation.JTokenProperties == null || !operation.JTokenProperties.Any())
             {
                 continue;
             }
 
-            foreach (var additionalProperty in operation.AdditionalProperties)
+            foreach (var jTokenProperty in operation.JTokenProperties)
             {
-                PopulateReferences(definedPathReferences, additionalProperty.Value);
+                if (jTokenProperty.Value.ValueKind is not (JsonValueKind.Object or JsonValueKind.Array))
+                {
+                    continue;
+                }
+
+                var property = JsonElementToSwaggerDocumentProperty(jTokenProperty.Value);
+                PopulateReferences(definedPathReferences, property);
             }
         }
 
@@ -149,15 +157,32 @@ public partial class SwaggerMergeHandler
             }
         }
 
-        if (data.AdditionalProperties == null || !data.AdditionalProperties.Any())
+        if (data.JTokenProperties == null || !data.JTokenProperties.Any())
         {
             return;
         }
 
-        foreach (var additionalProperty in data.AdditionalProperties)
+        foreach (var jTokenProperty in data.JTokenProperties)
         {
-            PopulateReferences(references, additionalProperty.Value);
+            if (jTokenProperty.Value.ValueKind is not (JsonValueKind.Object or JsonValueKind.Array))
+            {
+                continue;
+            }
+
+            var property = JsonElementToSwaggerDocumentProperty(jTokenProperty.Value);
+            PopulateReferences(references, property);
         }
+    }
+
+    private static SwaggerDocumentProperty JsonElementToSwaggerDocumentProperty(JsonElement element)
+    {
+        using var sw = new MemoryStream();
+        using var jw = new Utf8JsonWriter(sw);
+        element.WriteTo(jw);
+        jw.Flush();
+        var json = Encoding.UTF8.GetString(sw.ToArray());
+        return JsonSerializer.Deserialize(json, SwaggerDocumentPropertyJsonSerializerContext.Default.SwaggerDocumentProperty)
+               ?? new SwaggerDocumentProperty();
     }
 
     private static KeyValuePair<string, SwaggerDocumentProperty> GetDefinitionByReference(

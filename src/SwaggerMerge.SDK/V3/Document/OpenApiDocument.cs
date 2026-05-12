@@ -1,11 +1,7 @@
 namespace SwaggerMerge.V3.Document;
 
-using System.IO;
-using System.Runtime.Serialization;
-using System.Text;
 using System.Text.Json;
 using System.Text.Json.Serialization;
-using SwaggerMerge.Common.Extensions;
 
 /// <summary>
 /// Defines the detail of an OpenAPI 3.x document.
@@ -197,70 +193,10 @@ public class OpenApiDocumentOperation
     public List<OpenApiServer>? Servers { get; set; }
 
     /// <summary>
-    /// Gets or sets the additional properties that are not covered by the defined OpenAPI properties.
-    /// </summary>
-    [JsonIgnore]
-    public Dictionary<string, OpenApiDocumentProperty>? AdditionalProperties { get; set; }
-
-    /// <summary>
     /// Gets or sets the additional JSON properties that are not covered by the defined OpenAPI properties.
     /// </summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? JTokenProperties { get; set; }
-
-    private static OpenApiDocumentProperty ToOpenApiDocumentProperty(JsonElement? jsonObject)
-    {
-        if (jsonObject == null)
-        {
-            return new OpenApiDocumentProperty();
-        }
-
-        using var sw = new MemoryStream();
-        using var jw = new Utf8JsonWriter(sw);
-        jsonObject.Value.WriteTo(jw);
-        jw.Flush();
-        var json = Encoding.UTF8.GetString(sw.ToArray());
-        return JsonSerializer.Deserialize(json, OpenApiDocumentPropertyJsonSerializerContext.Default.OpenApiDocumentProperty) ??
-               new OpenApiDocumentProperty();
-    }
-
-    [OnDeserialized]
-    private void OnDeserialized(StreamingContext context)
-    {
-        if (JTokenProperties == null)
-        {
-            return;
-        }
-
-        var objectTokens = JTokenProperties.ToList();
-
-        if (!objectTokens.Any())
-        {
-            return;
-        }
-
-        AdditionalProperties = objectTokens.ToDictionary(
-            x => x.Key,
-            x => ToOpenApiDocumentProperty(x.Value));
-
-        JTokenProperties.RemoveRange(objectTokens);
-    }
-
-    [OnSerializing]
-    private void OnSerializing(StreamingContext context)
-    {
-        var additionalProperties = AdditionalProperties?.ToDictionary(
-            x => x.Key,
-            x => JsonSerializer.SerializeToElement(x.Value, OpenApiDocumentPropertyJsonSerializerContext.Default.OpenApiDocumentProperty));
-
-        if (additionalProperties == null)
-        {
-            return;
-        }
-
-        JTokenProperties ??= new();
-        JTokenProperties.AddRange(additionalProperties);
-    }
 }
 
 /// <summary>
@@ -549,68 +485,8 @@ public class OpenApiDocumentProperty
     public Dictionary<string, OpenApiDocumentProperty>? Properties { get; set; }
 
     /// <summary>
-    /// Gets or sets the additional properties that are not covered by the defined properties.
-    /// </summary>
-    [JsonIgnore]
-    public Dictionary<string, OpenApiDocumentProperty>? AdditionalProperties { get; set; }
-
-    /// <summary>
     /// Gets or sets the additional JSON properties that are not covered by the defined properties.
     /// </summary>
     [JsonExtensionData]
     public Dictionary<string, JsonElement>? JTokenProperties { get; set; }
-
-    private static OpenApiDocumentProperty ToOpenApiDocumentProperty(JsonElement? jsonObject)
-    {
-        if (jsonObject == null)
-        {
-            return new OpenApiDocumentProperty();
-        }
-
-        using var sw = new MemoryStream();
-        using var jw = new Utf8JsonWriter(sw);
-        jsonObject.Value.WriteTo(jw);
-        jw.Flush();
-        var json = Encoding.UTF8.GetString(sw.ToArray());
-        return JsonSerializer.Deserialize(json, OpenApiDocumentPropertyJsonSerializerContext.Default.OpenApiDocumentProperty) ??
-               new OpenApiDocumentProperty();
-    }
-
-    [OnDeserialized]
-    private void OnDeserialized(StreamingContext context)
-    {
-        if (JTokenProperties == null)
-        {
-            return;
-        }
-
-        var objectTokens = JTokenProperties.ToList();
-
-        if (!objectTokens.Any())
-        {
-            return;
-        }
-
-        AdditionalProperties = objectTokens.ToDictionary(
-            x => x.Key,
-            x => ToOpenApiDocumentProperty(x.Value));
-
-        JTokenProperties.RemoveRange(objectTokens);
-    }
-
-    [OnSerializing]
-    private void OnSerializing(StreamingContext context)
-    {
-        var additionalProperties = AdditionalProperties?.ToDictionary(
-            x => x.Key,
-            x => JsonSerializer.SerializeToElement(x.Value, OpenApiDocumentPropertyJsonSerializerContext.Default.OpenApiDocumentProperty));
-
-        if (additionalProperties == null)
-        {
-            return;
-        }
-
-        JTokenProperties ??= new();
-        JTokenProperties.AddRange(additionalProperties);
-    }
 }
