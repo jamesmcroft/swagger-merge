@@ -141,3 +141,7 @@ var result = handler.Merge(new OpenApiMergeConfiguration
 ### YAML Support
 
 Both V2 and V3 documents can be loaded and saved in JSON or YAML format. Format is auto-detected from file extension (`.json`, `.yaml`, `.yml`).
+
+### CLI V3 Support
+
+The CLI tool now auto-detects whether your input files are Swagger V2 or OpenAPI V3 and routes to the appropriate merge handler. All inputs must be the same spec version. For V3 config files, use `servers` instead of `host`/`basePath`/`schemes` in the output section. See the [CLI README](../src/SwaggerMerge/README.md) for configuration examples.

@@ -9,7 +9,7 @@ The Swagger Merge SDK & CLI tool allows you to process the merging of multiple S
 
 The **SDK** supports merging both Swagger V2 and OpenAPI V3 specification files in JSON and YAML formats.
 
-The **CLI tool** currently supports merging Swagger V2 specification files in JSON and YAML formats. OpenAPI V3 CLI support is planned for a future release.
+The **CLI tool** supports merging both Swagger V2 and OpenAPI V3 specification files in JSON and YAML formats. The spec version is auto-detected from your input files.
 
 > **Upgrading from v0.4.x?** See the [migration guide](docs/migration-v0.4-to-v1.0.md) for details on breaking changes and new namespace structure.
 

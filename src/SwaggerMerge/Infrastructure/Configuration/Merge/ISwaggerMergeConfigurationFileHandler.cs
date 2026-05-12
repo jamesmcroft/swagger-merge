@@ -9,4 +9,6 @@ internal interface ISwaggerMergeConfigurationFileHandler
     SwaggerMergeConfigurationFileValidationResult Validate(SwaggerMergeConfigurationFile config);
 
     Task<SwaggerMergeConfiguration> ConvertAsync(SwaggerMergeConfigurationFile config);
+
+    Task<MergeConfigResult> ConvertWithVersionDetectionAsync(SwaggerMergeConfigurationFile config);
 }

@@ -7,7 +7,7 @@
 
 The Swagger Merge CLI tool allows you to process the merging of multiple Swagger files into a single Swagger file. This is useful for bringing together the API layer of a distributed service architecture where you wish to expose the APIs via a single API gateway.
 
-The CLI tool supports merging Swagger V2 specification files in **JSON and YAML** formats. Input and output formats are auto-detected based on file extension. OpenAPI V3 CLI support is planned for a future release.
+The CLI tool supports merging both **Swagger V2** and **OpenAPI V3** specification files in **JSON and YAML** formats. The spec version is auto-detected from your input files, and the output format is determined by the output file extension.
 
 This tool uses the Swagger Merge SDK which is available as [a NuGet package for you to use in your own applications for merging Swagger files](https://www.nuget.org/packages/SwaggerMerge.SDK/).
 
@@ -27,9 +27,13 @@ dotnet tool update -g SwaggerMerge
 
 ### Configure your Swagger document merge
 
-To use the CLI tool, you will need access to all of your Swagger V2 input files (JSON or YAML), and you will need to create a configuration JSON file that will be used by the CLI tool to determine how to merge the input files together.
+To use the CLI tool, you will need access to all of your input files (JSON or YAML), and you will need to create a configuration JSON file that will be used by the CLI tool to determine how to merge the input files together.
 
-Here's an example of the format for this configuration file.
+The tool auto-detects whether your inputs are Swagger V2 or OpenAPI V3 and routes to the appropriate merge handler. All inputs must be the same spec version.
+
+#### Swagger V2 example
+
+Here's an example configuration for merging Swagger V2 files.
 
 ```json
 {
@@ -99,6 +103,61 @@ The configuration file is made up of several options that allow you to customize
     - `in` - **Optional**. A string to use as the in of the security definition.
     - `name` - **Optional**. A string to use as the name of the security definition.
   - `security` - **Optional**. An array of security requirements to use in the output file.
+
+#### OpenAPI V3 example
+
+For OpenAPI V3 inputs, use `servers` instead of `host`/`basePath`/`schemes`:
+
+```json
+{
+  "inputs": [
+      {
+          "file": "./pets.openapi.json"
+      },
+      {
+          "file": "./store.openapi.yaml",
+          "path": {
+              "prepend": "/api/store",
+              "stripStart": "/v1"
+          }
+      }
+  ],
+  "output": {
+      "file": "./api.openapi.yaml",
+      "info": {
+          "title": "Merged API",
+          "version": "1.0"
+      },
+      "servers": [
+          {
+              "url": "https://api.example.com",
+              "description": "Production"
+          }
+      ],
+      "securityDefinitions": {
+          "BearerAuth": {
+              "type": "http",
+              "scheme": "bearer",
+              "bearerFormat": "JWT"
+          }
+      },
+      "security": [
+          {
+              "BearerAuth": []
+          }
+      ]
+  }
+}
+```
+
+The V3 output configuration supports:
+
+- `servers` - **Optional**. An array of server objects with `url` and `description` properties.
+- `securityDefinitions` - **Optional**. Maps to `components.securitySchemes` in the merged output.
+- `security` - **Optional**. An array of security requirements.
+- `info` - **Optional**. Same as V2.
+
+> **Note:** The `openapi` version in the merged output is automatically inferred from the input documents (the highest version among inputs is used).
 
 ### Run the merge tool
 

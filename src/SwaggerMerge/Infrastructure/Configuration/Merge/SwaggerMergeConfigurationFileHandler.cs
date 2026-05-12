@@ -3,11 +3,18 @@ namespace SwaggerMerge.Infrastructure.Configuration.Merge;
 using System.Text;
 using System.Text.Json;
 using SwaggerMerge.V2.Document;
+using SwaggerMerge.V3.Document;
+using SwaggerMerge.Common.Document;
 using SwaggerMerge.Common.Exceptions;
 using SwaggerMerge.V2.Configuration;
 using SwaggerMerge.V2.Configuration.Input;
+using SwaggerMerge.V3.Configuration;
+using SwaggerMerge.V3.Configuration.Input;
+using SwaggerMerge.V3.Configuration.Output;
 
-internal sealed class SwaggerMergeConfigurationFileHandler(ISwaggerDocumentHandler documentHandler)
+internal sealed class SwaggerMergeConfigurationFileHandler(
+    ISwaggerDocumentHandler v2DocumentHandler,
+    IOpenApiDocumentHandler v3DocumentHandler)
     : ISwaggerMergeConfigurationFileHandler
 {
     public async Task<SwaggerMergeConfigurationFile> LoadAsync(string configFilePath)
@@ -58,11 +65,135 @@ internal sealed class SwaggerMergeConfigurationFileHandler(ISwaggerDocumentHandl
 
         foreach (var input in config.Inputs)
         {
-            var inputFile = await documentHandler.LoadFromFilePathAsync(input.File);
+            var inputFile = await v2DocumentHandler.LoadFromFilePathAsync(input.File);
             inputs.Add(new SwaggerInputConfiguration { File = inputFile, Path = input.Path, Info = input.Info });
         }
 
         return new SwaggerMergeConfiguration { Inputs = inputs, Output = config.Output };
+    }
+
+    public async Task<MergeConfigResult> ConvertWithVersionDetectionAsync(SwaggerMergeConfigurationFile config)
+    {
+        var inputFiles = config.Inputs.ToList();
+        if (inputFiles.Count == 0)
+        {
+            throw new SwaggerMergeException("At least one input file is required.");
+        }
+
+        // Detect version from the first input file
+        var firstContent = await ReadAllTextAsync(inputFiles[0].File);
+        var version = SpecVersionDetector.DetectVersion(firstContent);
+
+        return version switch
+        {
+            SpecVersion.SwaggerV2 => await ConvertV2Async(config, inputFiles, firstContent),
+            SpecVersion.OpenApiV3 => await ConvertV3Async(config, inputFiles, firstContent),
+            _ => throw new SwaggerMergeException($"Unsupported specification version: {version}")
+        };
+    }
+
+    private async Task<MergeConfigResult> ConvertV2Async(
+        SwaggerMergeConfigurationFile config,
+        List<Input.SwaggerInputConfiguration> inputFiles,
+        string firstContent)
+    {
+        var inputs = new List<SwaggerInputConfiguration>();
+        var format = ISwaggerDocumentHandler.DetectFormat(inputFiles[0].File, firstContent);
+        var firstDoc = format == DocumentFormat.Yaml
+            ? v2DocumentHandler.LoadFromYaml(firstContent)
+            : v2DocumentHandler.LoadFromJson(firstContent);
+        inputs.Add(new SwaggerInputConfiguration { File = firstDoc, Path = inputFiles[0].Path, Info = inputFiles[0].Info });
+
+        for (var i = 1; i < inputFiles.Count; i++)
+        {
+            var content = await ReadAllTextAsync(inputFiles[i].File);
+            var inputVersion = SpecVersionDetector.DetectVersion(content);
+            if (inputVersion != SpecVersion.SwaggerV2)
+            {
+                throw new SwaggerMergeException(
+                    $"Input file '{inputFiles[i].File}' is {inputVersion} but the first input is Swagger V2. All inputs must be the same specification version.");
+            }
+
+            var doc = await v2DocumentHandler.LoadFromFilePathAsync(inputFiles[i].File);
+            inputs.Add(new SwaggerInputConfiguration { File = doc, Path = inputFiles[i].Path, Info = inputFiles[i].Info });
+        }
+
+        return new MergeConfigResult
+        {
+            Version = SpecVersion.SwaggerV2,
+            V2Config = new SwaggerMergeConfiguration { Inputs = inputs, Output = config.Output }
+        };
+    }
+
+    private async Task<MergeConfigResult> ConvertV3Async(
+        SwaggerMergeConfigurationFile config,
+        List<Input.SwaggerInputConfiguration> inputFiles,
+        string firstContent)
+    {
+        var inputs = new List<OpenApiInputConfiguration>();
+        var format = IOpenApiDocumentHandler.DetectFormat(inputFiles[0].File, firstContent);
+        var firstDoc = format == DocumentFormat.Yaml
+            ? v3DocumentHandler.LoadFromYaml(firstContent)
+            : v3DocumentHandler.LoadFromJson(firstContent);
+        inputs.Add(new OpenApiInputConfiguration { File = firstDoc, Path = inputFiles[0].Path, Info = inputFiles[0].Info });
+
+        for (var i = 1; i < inputFiles.Count; i++)
+        {
+            var content = await ReadAllTextAsync(inputFiles[i].File);
+            var inputVersion = SpecVersionDetector.DetectVersion(content);
+            if (inputVersion != SpecVersion.OpenApiV3)
+            {
+                throw new SwaggerMergeException(
+                    $"Input file '{inputFiles[i].File}' is {inputVersion} but the first input is OpenAPI V3. All inputs must be the same specification version.");
+            }
+
+            var doc = await v3DocumentHandler.LoadFromFilePathAsync(inputFiles[i].File);
+            inputs.Add(new OpenApiInputConfiguration { File = doc, Path = inputFiles[i].Path, Info = inputFiles[i].Info });
+        }
+
+        var v3Output = new OpenApiOutputConfiguration
+        {
+            Info = config.Output.Info != null
+                ? new OpenApiOutputInfoConfiguration
+                {
+                    Title = config.Output.Info.Title,
+                    Version = config.Output.Info.Version
+                }
+                : null,
+            Servers = config.Output.Servers,
+            SecuritySchemes = config.Output.SecurityDefinitions != null
+                ? ConvertV2SecurityDefinitionsToV3(config.Output.SecurityDefinitions)
+                : null,
+            Security = config.Output.Security?.Select(ConvertV2SecurityRequirementToV3).ToList()
+        };
+
+        return new MergeConfigResult
+        {
+            Version = SpecVersion.OpenApiV3,
+            V3Config = new OpenApiMergeConfiguration { Inputs = inputs, Output = v3Output }
+        };
+    }
+
+    private static OpenApiDocumentSecurityDefinitions ConvertV2SecurityDefinitionsToV3(
+        SwaggerDocumentSecurityDefinitions v2Defs)
+    {
+        var v3Defs = new OpenApiDocumentSecurityDefinitions();
+        foreach (var kvp in v2Defs)
+        {
+            v3Defs[kvp.Key] = new V3.Document.OpenApiDocumentSecurityScheme { JTokenProperties = kvp.Value.JTokenProperties };
+        }
+        return v3Defs;
+    }
+
+    private static V3.Document.OpenApiDocumentSecurityRequirement ConvertV2SecurityRequirementToV3(
+        SwaggerDocumentSecurityRequirement v2Req)
+    {
+        var v3Req = new V3.Document.OpenApiDocumentSecurityRequirement();
+        foreach (var kvp in v2Req)
+        {
+            v3Req[kvp.Key] = kvp.Value;
+        }
+        return v3Req;
     }
 
     private static async Task<string> ReadAllTextAsync(string filePath)
@@ -71,3 +202,4 @@ internal sealed class SwaggerMergeConfigurationFileHandler(ISwaggerDocumentHandl
         return await stream.ReadToEndAsync();
     }
 }
+
