@@ -117,11 +117,20 @@ internal sealed class SwaggerMergeConfigurationFileHandler(
         for (var i = 1; i < inputFiles.Count; i++)
         {
             var content = await ReadAllTextAsync(inputFiles[i].File);
-            var inputVersion = SpecVersionDetector.DetectVersion(content);
-            if (inputVersion != SpecVersion.SwaggerV2)
+
+            try
+            {
+                var inputVersion = SpecVersionDetector.DetectVersion(content);
+                if (inputVersion != SpecVersion.SwaggerV2)
+                {
+                    throw new SwaggerMergeException(
+                        $"Input file '{inputFiles[i].File}' is {inputVersion} but the first input is Swagger V2. All inputs must be the same specification version.");
+                }
+            }
+            catch (InvalidOperationException ex)
             {
                 throw new SwaggerMergeException(
-                    $"Input file '{inputFiles[i].File}' is {inputVersion} but the first input is Swagger V2. All inputs must be the same specification version.");
+                    $"Could not determine the specification version of '{inputFiles[i].File}'. {ex.Message}", ex);
             }
 
             var inputFormat = ISwaggerDocumentHandler.DetectFormat(inputFiles[i].File, content);
@@ -153,11 +162,20 @@ internal sealed class SwaggerMergeConfigurationFileHandler(
         for (var i = 1; i < inputFiles.Count; i++)
         {
             var content = await ReadAllTextAsync(inputFiles[i].File);
-            var inputVersion = SpecVersionDetector.DetectVersion(content);
-            if (inputVersion != SpecVersion.OpenApiV3)
+
+            try
+            {
+                var inputVersion = SpecVersionDetector.DetectVersion(content);
+                if (inputVersion != SpecVersion.OpenApiV3)
+                {
+                    throw new SwaggerMergeException(
+                        $"Input file '{inputFiles[i].File}' is {inputVersion} but the first input is OpenAPI V3. All inputs must be the same specification version.");
+                }
+            }
+            catch (InvalidOperationException ex)
             {
                 throw new SwaggerMergeException(
-                    $"Input file '{inputFiles[i].File}' is {inputVersion} but the first input is OpenAPI V3. All inputs must be the same specification version.");
+                    $"Could not determine the specification version of '{inputFiles[i].File}'. {ex.Message}", ex);
             }
 
             var inputFormat = IOpenApiDocumentHandler.DetectFormat(inputFiles[i].File, content);
