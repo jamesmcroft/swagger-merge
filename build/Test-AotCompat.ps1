@@ -13,7 +13,7 @@ foreach ($line in $($publishOutput -split "`r`n")) {
     }
 }
 
-Push-Location $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/bin/Release/$targetNetFramework/linux-x64
+Push-Location $rootDirectory/test/SwaggerMerge.AotCompatibility.TestApp/bin/Release/$targetNetFramework/publish
 
 Write-Host "Executing test App..."
 ./SwaggerMerge.AotCompatibility.TestApp

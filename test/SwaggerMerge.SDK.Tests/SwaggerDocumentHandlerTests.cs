@@ -41,7 +41,7 @@ public class SwaggerDocumentHandlerTests
     }
 
     [Fact]
-    public void LoadFromJson_EmptyObject_ThrowsInvalidOperationException()
+    public void LoadFromJson_NullJson_ThrowsInvalidOperationException()
     {
         Assert.Throws<InvalidOperationException>(() => _handler.LoadFromJson("null"));
     }
