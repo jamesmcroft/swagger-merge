@@ -1,9 +1,11 @@
 namespace SwaggerMerge.SDK.Tests;
 
-using SwaggerMerge.Configuration;
-using SwaggerMerge.Configuration.Input;
-using SwaggerMerge.Configuration.Output;
-using SwaggerMerge.Document;
+using SwaggerMerge.Common.Configuration.Input;
+using SwaggerMerge.V2;
+using SwaggerMerge.V2.Configuration;
+using SwaggerMerge.V2.Configuration.Input;
+using SwaggerMerge.V2.Configuration.Output;
+using SwaggerMerge.V2.Document;
 using Xunit;
 
 public class SwaggerMergeHandlerTests
@@ -59,7 +61,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = store,
-                    Info = new SwaggerInputInfoConfiguration { Append = true, Title = "+ Store" }
+                    Info = new InputInfoConfiguration { Append = true, Title = "+ Store" }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -88,7 +90,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = store,
-                    Info = new SwaggerInputInfoConfiguration { Append = true }
+                    Info = new InputInfoConfiguration { Append = true }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -115,7 +117,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = store,
-                    Path = new SwaggerInputPathConfiguration { StripStart = "/store" }
+                    Path = new InputPathConfiguration { StripStart = "/store" }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -144,7 +146,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = todo,
-                    Path = new SwaggerInputPathConfiguration { Prepend = "/api" }
+                    Path = new InputPathConfiguration { Prepend = "/api" }
                 }
             },
             Output = new SwaggerOutputConfiguration
@@ -174,7 +176,7 @@ public class SwaggerMergeHandlerTests
                 new SwaggerInputConfiguration
                 {
                     File = store,
-                    Path = new SwaggerInputPathConfiguration { StripStart = "/store", Prepend = "/api/v2" }
+                    Path = new InputPathConfiguration { StripStart = "/store", Prepend = "/api/v2" }
                 }
             },
             Output = new SwaggerOutputConfiguration

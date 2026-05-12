@@ -1,8 +1,8 @@
 namespace SwaggerMerge.SDK.Tests;
 
 using System.Text.Json;
-using SwaggerMerge.Document;
-using SwaggerMerge.Document.V3;
+using SwaggerMerge.Common.Document;
+using SwaggerMerge.V3.Document;
 using Xunit;
 
 public class OpenApiDocumentHandlerTests

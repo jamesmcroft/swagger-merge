@@ -2,10 +2,10 @@ namespace SwaggerMerge.Infrastructure.Configuration.Merge;
 
 using System.Text;
 using System.Text.Json;
-using Document;
-using Exceptions;
-using SwaggerMerge.Configuration;
-using SwaggerMerge.Configuration.Input;
+using SwaggerMerge.V2.Document;
+using SwaggerMerge.Common.Exceptions;
+using SwaggerMerge.V2.Configuration;
+using SwaggerMerge.V2.Configuration.Input;
 
 internal sealed class SwaggerMergeConfigurationFileHandler(ISwaggerDocumentHandler documentHandler)
     : ISwaggerMergeConfigurationFileHandler

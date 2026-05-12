@@ -1,9 +1,10 @@
 using System.Diagnostics.CodeAnalysis;
 using System.Text.Json;
-using SwaggerMerge.Configuration;
-using SwaggerMerge.Configuration.Input;
-using SwaggerMerge.Configuration.Output;
-using SwaggerMerge.Document;
+using SwaggerMerge.V2.Configuration;
+using SwaggerMerge.V2.Configuration.Input;
+using SwaggerMerge.V2.Configuration.Output;
+using SwaggerMerge.V2.Document;
+using SwaggerMerge.Common.Document;
 
 namespace SwaggerMerge.AotCompatibility.TestApp;
 
@@ -12,7 +13,7 @@ internal sealed class SwaggerMergeHandlerAotTest
     [UnconditionalSuppressMessage("", "IL2026", Justification = "Property presence guaranteed by explicit hints.")]
     public static void Test()
     {
-        var merger = new SwaggerMergeHandler();
+        var merger = new SwaggerMerge.V2.SwaggerMergeHandler();
 
         GuaranteeProperties<SwaggerMergeConfiguration>();
 

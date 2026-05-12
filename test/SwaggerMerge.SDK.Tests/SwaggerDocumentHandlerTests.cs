@@ -1,7 +1,8 @@
 namespace SwaggerMerge.SDK.Tests;
 
 using System.Text.Json;
-using SwaggerMerge.Document;
+using SwaggerMerge.V2.Document;
+using SwaggerMerge.Common.Document;
 using Xunit;
 
 public class SwaggerDocumentHandlerTests
